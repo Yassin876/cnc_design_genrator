@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+data/output/*
+!data/output/.gitkeep
+*.dxf
+*.png
+!data/input/.gitkeep
+.ipynb_checkpoints/
+*.egg-info/

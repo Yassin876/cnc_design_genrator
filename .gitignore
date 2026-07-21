@@ -1,0 +1,38 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Virtual environments
+env/
+.venv/
+
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+.eggs/
+*.whl
+
+# VS Code
+.vscode/
+
+# macOS
+.DS_Store
+
+# Data and outputs
+outputs/
+uploads/
+
+# SQLite database
+*.db
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ignore environment config
+.env

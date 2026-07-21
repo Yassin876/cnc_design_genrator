@@ -1,0 +1,41 @@
+# ─── Core UI ───────────────────────────────────────────────
+PyQt6
+pyqtgraph
+PyOpenGL
+trimesh
+
+# ─── DXF & Drawing ─────────────────────────────────────────
+ezdxf
+matplotlib
+
+# ─── Image Processing ──────────────────────────────────────
+opencv-python-headless
+Pillow
+scikit-image
+numpy
+
+# ─── AI / ML Models ────────────────────────────────────────
+torch
+torchvision
+transformers
+sam3
+huggingface_hub
+timm
+einops
+decord
+ftfy
+iopath
+vtracer
+pycocotools
+triton-windows ; sys_platform == "win32"
+
+# ─── Gemini & APIs ─────────────────────────────────────────
+google-genai
+requests
+
+# ─── Image2CAD extras ──────────────────────────────────────
+scipy
+
+# ─── Utils ─────────────────────────────────────────────────
+python-dotenv
+psutil
