@@ -39,7 +39,8 @@ class PipelineManager:
         )
         
         start_time = datetime.now()
-        output_dxf = self._generate_output_path(prompt, "dxf", output_dir)
+        input_path_for_naming = image_path if mode == "Edit" else None
+        output_dxf = self._generate_output_path(prompt, "dxf", output_dir, input_file_path=input_path_for_naming)
 
         try:
             if mode == "Edit":
@@ -147,7 +148,13 @@ class PipelineManager:
                 source_file = edit_file_3d(image_path, prompt)
 
             # Copy the generated file to the user workspace (or outputs/ fallback)
-            dest_path = self._generate_output_path(prompt, os.path.splitext(source_file)[1].lstrip(".") or "stl", output_dir)
+            input_path_for_naming = image_path if mode == "Edit3D" else None
+            dest_path = self._generate_output_path(
+                prompt,
+                os.path.splitext(source_file)[1].lstrip(".") or "stl",
+                output_dir,
+                input_file_path=input_path_for_naming,
+            )
             if os.path.abspath(source_file) != os.path.abspath(dest_path):
                 shutil.copy2(source_file, dest_path)
             output_file = dest_path
@@ -163,9 +170,79 @@ class PipelineManager:
             return None
 
 
-    def _generate_output_path(self, prompt, ext, output_dir=None):
+    def run_nesting(
+        self,
+        user_id,
+        project_id,
+        part_paths,
+        sheet_width,
+        sheet_height,
+        spacing=5.0,
+        allow_rotate=True,
+        output_dir=None,
+    ):
+        """
+        Pack multiple DXF parts onto one sheet.
+        part_paths: list of DXF paths or (path, qty) tuples.
+        Returns (output_path, placements, unplaced_count) or (None, [], unplaced_count).
+        """
+        from core.nesting import nest_parts
+
+        job_id = self.db.create_job(
+            user_id=user_id,
+            project_id=project_id,
+            job_type="Nest",
+            design_type="2D",
+            output_format="DXF",
+            text_prompt=f"Nest {len(part_paths)} part(s) on {sheet_width}x{sheet_height}mm sheet",
+        )
+
+        start_time = datetime.now()
+        save_dir = output_dir if output_dir else "outputs"
+        os.makedirs(save_dir, exist_ok=True)
+        output_dxf = os.path.join(
+            save_dir, f"nested_sheet_{datetime.now().strftime('%H%M%S')}.dxf"
+        )
+
+        try:
+            output_path, placements, unplaced_count = nest_parts(
+                parts=part_paths,
+                sheet_width=sheet_width,
+                sheet_height=sheet_height,
+                spacing=spacing,
+                allow_rotate=allow_rotate,
+                output_path=output_dxf,
+            )
+
+            duration = int((datetime.now() - start_time).total_seconds() * 1000)
+            out_file_id = self.db.log_output_file(
+                job_id, os.path.basename(output_path), output_path, "DXF"
+            )
+            self.db.update_job_status(
+                job_id, "COMPLETED", output_file_id=out_file_id, processing_time_ms=duration
+            )
+            return output_path, placements, unplaced_count
+
+        except Exception as e:
+            print(f"Nesting Error: {e}")
+            self.db.update_job_status(job_id, "FAILED")
+            return None, [], len(part_paths)
+
+    def _generate_output_path(self, prompt, ext, output_dir=None, input_file_path=None):
         # Use the user-selected workspace folder, or fall back to 'outputs/'
         save_dir = output_dir if output_dir else "outputs"
         os.makedirs(save_dir, exist_ok=True)
+
+        if input_file_path:
+            stem = os.path.splitext(os.path.basename(input_file_path))[0]
+            if stem.endswith("_edit"):
+                base = stem
+            else:
+                base = f"{stem}_edit"
+            out_path = os.path.join(save_dir, f"{base}.{ext}")
+            if os.path.exists(out_path):
+                out_path = os.path.join(save_dir, f"{base}_{datetime.now().strftime('%H%M%S')}.{ext}")
+            return out_path
+
         base = "".join([c if c.isalnum() else "_" for c in prompt[:20]]).strip("_") or "output"
         return os.path.join(save_dir, f"{base}_{datetime.now().strftime('%H%M%S')}.{ext}")

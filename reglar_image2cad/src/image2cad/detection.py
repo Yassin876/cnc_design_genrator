@@ -5,6 +5,7 @@ Cell 2 من النوت بوك: تحديد صندوق تقريبي (bounding box)
 from __future__ import annotations
 
 import logging
+import time
 
 import torch
 from PIL import Image
@@ -17,6 +18,7 @@ log = logging.getLogger(__name__)
 
 def detect_object_box(image: Image.Image, cfg: DetectionConfig) -> list[float]:
     """يرجع [x1, y1, x2, y2] تقريبي حوالين أكتر منطقة بتشبه أحد الـ prompts."""
+    start_time = time.perf_counter()
     model = CLIPModel.from_pretrained(cfg.clip_model_name)
     processor = CLIPProcessor.from_pretrained(cfg.clip_model_name)
 
@@ -51,5 +53,8 @@ def detect_object_box(image: Image.Image, cfg: DetectionConfig) -> list[float]:
     y2 = max(b[3] for b in boxes)
 
     final_box = [x1, y1, x2, y2]
+    elapsed = time.perf_counter() - start_time
+    print(f"[TIMING] CLIP box generation took {elapsed:.2f} seconds")
+    log.info("[TIMING] CLIP box generation took %.2f seconds", elapsed)
     log.info("Final box: %s (من %d patch متطابق)", final_box, len(boxes))
     return final_box

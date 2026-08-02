@@ -13,10 +13,12 @@ from PyQt6.QtWidgets import (
     QApplication, QMainWindow, QWidget, QStackedWidget,
     QVBoxLayout, QHBoxLayout, QPushButton, QLabel,
     QFrame, QScrollArea, QFileDialog, QLineEdit,
-    QTextEdit, QSizePolicy, QSpacerItem, QMenu, QMessageBox
+    QTextEdit, QSizePolicy, QSpacerItem, QMenu, QMessageBox,
+    QDialog, QCheckBox, QSpinBox, QDoubleSpinBox, QDialogButtonBox,
 )
-from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThread, QObject
-from PyQt6.QtGui import QCursor, QFont, QColor
+import math
+from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThread, QObject, QRect, QRectF
+from PyQt6.QtGui import QCursor, QFont, QColor, QPixmap, QPainter, QPen, QBrush
 
 from core.database import DatabaseManager
 from core.pipeline_manager import PipelineManager
@@ -48,6 +50,35 @@ def add_recent(path: str):
     recents.insert(0, path)
     recents = recents[:20]
     save_recents(recents)
+
+
+def collect_workspace_files(folder: str | None, extensions: set[str] | None = None, recursive: bool = True) -> list[Path]:
+    """Return files under a workspace folder, optionally filtered by extension and recursion."""
+    if not folder:
+        return []
+
+    base = Path(folder)
+    if not base.exists() or not base.is_dir():
+        return []
+
+    exts = {ext.lower() for ext in (extensions or set())}
+    files = []
+    seen = set()
+    matcher = base.rglob("*") if recursive else base.iterdir()
+
+    for path in matcher:
+        if not path.is_file():
+            continue
+        if exts and path.suffix.lower() not in exts:
+            continue
+
+        resolved = str(path.resolve())
+        if resolved in seen:
+            continue
+        seen.add(resolved)
+        files.append(path)
+
+    return sorted(files, key=lambda p: p.name.lower())
 
 
 # ─────────────────────────────────────────────────────────
@@ -1007,10 +1038,7 @@ class ProjectPage(QWidget):
                 item.widget().deleteLater()
 
         supported = {'.dxf', '.stl', '.png', '.jpg', '.jpeg', '.svg'}
-        files = [
-            f for f in Path(folder).iterdir()
-            if f.is_file() and f.suffix.lower() in supported
-        ]
+        files = collect_workspace_files(folder, supported, recursive=True)
 
         if not files:
             lbl = QLabel("No supported files found in this folder.\n(DXF, STL, PNG, JPG, SVG)")
@@ -1029,6 +1057,174 @@ class ProjectPage(QWidget):
     def _open_with_file(self, mode: str, filepath: str):
         """Open editor pre-loaded with a file from the project file list."""
         self.open_editor.emit(mode, filepath)
+
+
+# ─────────────────────────────────────────────────────────
+#  VIEWPORT LOADING ANIMATION WIDGET
+# ─────────────────────────────────────────────────────────
+class ViewportLoadingWidget(QWidget):
+    def __init__(self, parent=None):
+        super().__init__(parent)
+        self.angle_outer = 0
+        self.angle_inner = 0
+        self.pulse_phase = 0.0
+        self.status_text = "PROCESSING CAD DESIGN"
+        self.dot_count = 0
+
+        self.timer = QTimer(self)
+        self.timer.setInterval(33)  # ~30 FPS smooth animation
+        self.timer.timeout.connect(self._update_anim)
+
+        # Dot animation timer
+        self.dot_timer = QTimer(self)
+        self.dot_timer.setInterval(400)
+        self.dot_timer.timeout.connect(self._update_dots)
+
+    def start(self, status_text="PROCESSING CAD DESIGN"):
+        self.status_text = status_text
+        self.angle_outer = 0
+        self.angle_inner = 360
+        self.pulse_phase = 0.0
+        self.dot_count = 0
+        self.timer.start()
+        self.dot_timer.start()
+        self.update()
+
+    def stop(self):
+        self.timer.stop()
+        self.dot_timer.stop()
+
+    def set_status(self, text: str):
+        self.status_text = text
+        self.update()
+
+    def _update_anim(self):
+        self.angle_outer = (self.angle_outer + 4) % 360
+        self.angle_inner = (self.angle_inner - 6) % 360
+        self.pulse_phase += 0.08
+        if self.pulse_phase > 2 * math.pi:
+            self.pulse_phase -= 2 * math.pi
+        self.update()
+
+    def _update_dots(self):
+        self.dot_count = (self.dot_count + 1) % 4
+        self.update()
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
+
+        w, h = self.width(), self.height()
+        cx, cy = w / 2.0, h / 2.0
+
+        # Background
+        painter.fillRect(self.rect(), QColor("#11111b"))
+
+        # ── 1. Background Grid Circle & Radar Ring ──────────────────
+        r_outer = min(w, h) * 0.20
+        if r_outer < 40:
+            r_outer = 40
+
+        # Outer faint guide ring
+        painter.setPen(QPen(QColor(123, 47, 255, 45), 1.5, Qt.PenStyle.DashLine))
+        painter.drawEllipse(QRectF(cx - r_outer, cy - r_outer, r_outer * 2, r_outer * 2))
+
+        # Inner faint guide ring
+        r_inner = r_outer * 0.65
+        painter.setPen(QPen(QColor(0, 230, 118, 35), 1.2, Qt.PenStyle.DotLine))
+        painter.drawEllipse(QRectF(cx - r_inner, cy - r_inner, r_inner * 2, r_inner * 2))
+
+        # ── 2. Rotating Outer Arcs (Purple Glowing) ────────────────
+        pen_outer = QPen(QColor("#7b2fff"), 3.5)
+        pen_outer.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen_outer)
+        painter.drawArc(
+            QRectF(cx - r_outer, cy - r_outer, r_outer * 2, r_outer * 2),
+            int(self.angle_outer * 16),
+            100 * 16
+        )
+        painter.drawArc(
+            QRectF(cx - r_outer, cy - r_outer, r_outer * 2, r_outer * 2),
+            int((self.angle_outer + 180) * 16),
+            100 * 16
+        )
+
+        # ── 3. Counter-Rotating Inner Arcs (Cyan/Green Glowing) ───────
+        pen_inner = QPen(QColor("#00e676"), 2.5)
+        pen_inner.setCapStyle(Qt.PenCapStyle.RoundCap)
+        painter.setPen(pen_inner)
+        painter.drawArc(
+            QRectF(cx - r_inner, cy - r_inner, r_inner * 2, r_inner * 2),
+            int(self.angle_inner * 16),
+            75 * 16
+        )
+        painter.drawArc(
+            QRectF(cx - r_inner, cy - r_inner, r_inner * 2, r_inner * 2),
+            int((self.angle_inner + 180) * 16),
+            75 * 16
+        )
+
+        # ── 4. Sweeping Radar Line ──────────────────────────────
+        radar_rad = math.radians(self.angle_outer * 2.5)
+        rx = cx + r_outer * math.cos(radar_rad)
+        ry = cy + r_outer * math.sin(radar_rad)
+        painter.setPen(QPen(QColor(123, 47, 255, 90), 1.5))
+        painter.drawLine(int(cx), int(cy), int(rx), int(ry))
+
+        # ── 5. Pulsing Central CAD Icon ──────────────────────────
+        pulse_scale = 1.0 + 0.10 * math.sin(self.pulse_phase)
+        icon_alpha = int(180 + 75 * math.sin(self.pulse_phase))
+
+        font_icon = QFont("Segoe UI", int(24 * pulse_scale), QFont.Weight.Bold)
+        painter.setFont(font_icon)
+        painter.setPen(QColor(205, 214, 244, icon_alpha))
+        painter.drawText(
+            QRectF(cx - 30, cy - 30, 60, 60),
+            Qt.AlignmentFlag.AlignCenter,
+            "⚙️"
+        )
+
+        # ── 6. Status Text & Subtext ─────────────────────────────
+        text_y = cy + r_outer + 30
+
+        # Title
+        font_title = QFont("Segoe UI", 12, QFont.Weight.Bold)
+        painter.setFont(font_title)
+        painter.setPen(QColor("#cdd6f4"))
+        painter.drawText(
+            QRectF(cx - 200, text_y, 400, 24),
+            Qt.AlignmentFlag.AlignCenter,
+            self.status_text
+        )
+
+        # Subtext with animated dots
+        dots = "." * self.dot_count
+        font_sub = QFont("Segoe UI", 10)
+        painter.setFont(font_sub)
+        painter.setPen(QColor("#a090ff"))
+        painter.drawText(
+            QRectF(cx - 200, text_y + 26, 400, 20),
+            Qt.AlignmentFlag.AlignCenter,
+            f"Please wait while processing vector geometry{dots}"
+        )
+
+        # ── 7. Laser Pulse Line at Bottom ─────────────────────────
+        bar_w = min(240, int(w * 0.5))
+        bar_x = cx - bar_w / 2.0
+        bar_y = text_y + 55
+
+        painter.setPen(Qt.PenStyle.NoPen)
+        painter.setBrush(QColor("#1e1e2e"))
+        painter.drawRoundedRect(QRectF(bar_x, bar_y, bar_w, 4), 2, 2)
+
+        # Traveling laser highlight
+        streak_w = 60
+        pos = (self.angle_outer * 3.5) % (bar_w + streak_w) - streak_w
+        sx = max(bar_x, min(bar_x + bar_w - 10, bar_x + pos))
+        sw = min(streak_w, bar_x + bar_w - sx)
+        if sw > 0:
+            painter.setBrush(QColor("#00e676"))
+            painter.drawRoundedRect(QRectF(sx, bar_y, sw, 4), 2, 2)
 
 
 # ─────────────────────────────────────────────────────────
@@ -1080,6 +1276,21 @@ class ViewportWidget(QStackedWidget):
         self.view_3d.addItem(grid)
         self.addWidget(self.view_3d)
 
+        # Page 3: Loading Animation Overlay
+        self.loading_widget = ViewportLoadingWidget()
+        self.addWidget(self.loading_widget)
+
+    def show_loading(self, text: str = "PROCESSING CAD DESIGN"):
+        self.loading_widget.start(text)
+        self.setCurrentIndex(3)
+
+    def hide_loading(self):
+        self.loading_widget.stop()
+        if self.current_file and os.path.exists(self.current_file):
+            self.display_file(self.current_file)
+        else:
+            self.show_placeholder()
+
     def show_placeholder(self):
         self.setCurrentIndex(0)
 
@@ -1113,32 +1324,65 @@ class ViewportWidget(QStackedWidget):
             doc = ezdxf.readfile(path)
             msp = doc.modelspace()
             self.view_2d.clear()
-            
-            # Simple rendering of lines and circles
+
+            def _render_entities(entities, pen):
+                for entity in entities:
+                    try:
+                        etype = entity.dxftype()
+                        if etype == 'LINE':
+                            s, e = entity.dxf.start, entity.dxf.end
+                            self.view_2d.plot([s.x, e.x], [s.y, e.y], pen=pen)
+                        elif etype == 'CIRCLE':
+                            c, r = entity.dxf.center, entity.dxf.radius
+                            t = np.linspace(0, 2 * np.pi, 100)
+                            self.view_2d.plot(
+                                c.x + r * np.cos(t), c.y + r * np.sin(t), pen=pen
+                            )
+                        elif etype == 'ARC':
+                            c, r = entity.dxf.center, entity.dxf.radius
+                            a1 = np.radians(entity.dxf.start_angle)
+                            a2 = np.radians(entity.dxf.end_angle)
+                            if a2 <= a1:
+                                a2 += 2 * np.pi
+                            t = np.linspace(a1, a2, 100)
+                            self.view_2d.plot(
+                                c.x + r * np.cos(t), c.y + r * np.sin(t), pen=pen
+                            )
+                        elif etype == 'LWPOLYLINE':
+                            pts = list(entity.get_points())
+                            if pts:
+                                x = [p[0] for p in pts]
+                                y = [p[1] for p in pts]
+                                if entity.closed:
+                                    x.append(x[0]); y.append(y[0])
+                                self.view_2d.plot(x, y, pen=pen)
+                        elif etype == 'POLYLINE':
+                            pts = [v.dxf.location for v in entity.vertices]
+                            if pts:
+                                x = [p.x for p in pts]
+                                y = [p.y for p in pts]
+                                self.view_2d.plot(x, y, pen=pen)
+                        elif etype == 'INSERT':
+                            # Expand block reference into virtual geometry
+                            _render_entities(entity.virtual_entities(), pen)
+                    except Exception:
+                        pass
+
+            part_pen   = pg.mkPen('#7b2fff', width=1.5)
+            border_pen = pg.mkPen('#00e676', width=2)   # green = sheet border
+
             for entity in msp:
-                if entity.dxftype() == 'LINE':
-                    start = entity.dxf.start
-                    end = entity.dxf.end
-                    self.view_2d.plot([start.x, end.x], [start.y, end.y], pen=pg.mkPen('#7b2fff', width=2))
-                elif entity.dxftype() == 'CIRCLE':
-                    center = entity.dxf.center
-                    radius = entity.dxf.radius
-                    # Approximate circle with points
-                    t = np.linspace(0, 2*np.pi, 100)
-                    x = center.x + radius * np.cos(t)
-                    y = center.y + radius * np.sin(t)
-                    self.view_2d.plot(x, y, pen=pg.mkPen('#7b2fff', width=2))
-                elif entity.dxftype() == 'LWPOLYLINE':
-                    points = entity.get_points()
-                    x = [p[0] for p in points]
-                    y = [p[1] for p in points]
-                    self.view_2d.plot(x, y, pen=pg.mkPen('#7b2fff', width=2))
-            
+                layer = entity.dxf.get('layer', '')
+                pen = border_pen if layer == 'SHEET_BORDER' else part_pen
+                _render_entities([entity], pen)
+
             self.view_2d.autoRange()
             self.setCurrentIndex(1)
         except Exception as e:
             print(f"Error loading DXF: {e}")
             self.show_placeholder()
+
+
 
     def _display_stl(self, path):
         try:
@@ -1166,6 +1410,182 @@ class ViewportWidget(QStackedWidget):
         except Exception as e:
             print(f"Error loading STL: {e}")
             self.show_placeholder()
+
+
+# ─────────────────────────────────────────────────────────
+#  NESTING DIALOG
+# ─────────────────────────────────────────────────────────
+class NestingDialog(QDialog):
+    def __init__(self, parent, dxf_files: list):
+        """
+        dxf_files: list of dicts with keys path, name
+        """
+        super().__init__(parent)
+        self.setWindowTitle("Nest Parts")
+        self.setObjectName("nesting_dialog")
+        self.setMinimumWidth(480)
+        self.setMinimumHeight(420)
+        self._rows = []
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(20, 20, 20, 20)
+        root.setSpacing(14)
+
+        title = QLabel("Select parts to nest onto a sheet")
+        title.setObjectName("section_header")
+        root.addWidget(title)
+
+        hint = QLabel("Choose DXF outputs and set quantity for each part.")
+        hint.setObjectName("muted")
+        root.addWidget(hint)
+
+        scroll = QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        list_host = QWidget()
+        list_lay = QVBoxLayout(list_host)
+        list_lay.setContentsMargins(0, 0, 0, 0)
+        list_lay.setSpacing(6)
+
+        if not dxf_files:
+            empty = QLabel("No completed DXF outputs found for this workspace.")
+            empty.setObjectName("muted")
+            empty.setWordWrap(True)
+            list_lay.addWidget(empty)
+        else:
+            for item in dxf_files:
+                row = QHBoxLayout()
+                chk = QCheckBox()
+                chk.setChecked(True)
+                name_lbl = QLabel(item["name"])
+                name_lbl.setToolTip(item["path"])
+                qty = QSpinBox()
+                qty.setRange(1, 999)
+                qty.setValue(1)
+                qty.setFixedWidth(64)
+                qty.setObjectName("inp_small")
+                row.addWidget(chk)
+                row.addWidget(name_lbl, 1)
+                row.addWidget(QLabel("Qty"))
+                row.addWidget(qty)
+                list_lay.addLayout(row)
+                self._rows.append({"check": chk, "path": item["path"], "qty": qty})
+
+        list_lay.addStretch()
+        scroll.setWidget(list_host)
+        root.addWidget(scroll, 1)
+
+        opts = QFrame()
+        opts.setObjectName("settings_section")
+        opts_lay = QVBoxLayout(opts)
+        opts_lay.setContentsMargins(14, 14, 14, 14)
+        opts_lay.setSpacing(10)
+
+        sheet_row = QHBoxLayout()
+        self.sheet_w = QDoubleSpinBox()
+        self.sheet_w.setRange(1, 10000)
+        self.sheet_w.setValue(1200)
+        self.sheet_w.setSuffix(" mm")
+        self.sheet_w.setObjectName("inp_small")
+        self.sheet_h = QDoubleSpinBox()
+        self.sheet_h.setRange(1, 10000)
+        self.sheet_h.setValue(600)
+        self.sheet_h.setSuffix(" mm")
+        self.sheet_h.setObjectName("inp_small")
+        sheet_row.addWidget(QLabel("Sheet width"))
+        sheet_row.addWidget(self.sheet_w)
+        sheet_row.addSpacing(12)
+        sheet_row.addWidget(QLabel("Sheet height"))
+        sheet_row.addWidget(self.sheet_h)
+        opts_lay.addLayout(sheet_row)
+
+        spacing_row = QHBoxLayout()
+        self.spacing = QDoubleSpinBox()
+        self.spacing.setRange(0, 500)
+        self.spacing.setValue(5)
+        self.spacing.setSuffix(" mm")
+        self.spacing.setObjectName("inp_small")
+        spacing_row.addWidget(QLabel("Spacing"))
+        spacing_row.addWidget(self.spacing)
+        spacing_row.addStretch()
+        opts_lay.addLayout(spacing_row)
+
+        self.allow_rotate = QCheckBox("Allow rotation (90°)")
+        self.allow_rotate.setChecked(True)
+        opts_lay.addWidget(self.allow_rotate)
+        root.addWidget(opts)
+
+        buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
+        )
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Nest")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("btn_primary")
+        buttons.accepted.connect(self.accept)
+        buttons.rejected.connect(self.reject)
+        root.addWidget(buttons)
+
+    def selected_parts(self):
+        parts = []
+        for row in self._rows:
+            if row["check"].isChecked():
+                parts.append((row["path"], row["qty"].value()))
+        return parts
+
+    def sheet_size(self):
+        return self.sheet_w.value(), self.sheet_h.value()
+
+    def spacing_mm(self):
+        return self.spacing.value()
+
+    def rotation_allowed(self):
+        return self.allow_rotate.isChecked()
+
+
+# ─────────────────────────────────────────────────────────
+#  BACKGROUND NESTING WORKER
+# ─────────────────────────────────────────────────────────
+class NestingWorker(QObject):
+    finished = pyqtSignal(object)  # (output_path, placements, unplaced_count)
+    error = pyqtSignal(str)
+
+    def __init__(
+        self,
+        pipeline,
+        user_id,
+        project_id,
+        part_paths,
+        sheet_width,
+        sheet_height,
+        spacing,
+        allow_rotate,
+        output_dir=None,
+    ):
+        super().__init__()
+        self._pipeline = pipeline
+        self._user_id = user_id
+        self._project_id = project_id
+        self._part_paths = part_paths
+        self._sheet_width = sheet_width
+        self._sheet_height = sheet_height
+        self._spacing = spacing
+        self._allow_rotate = allow_rotate
+        self._output_dir = output_dir
+
+    def run(self):
+        try:
+            result = self._pipeline.run_nesting(
+                user_id=self._user_id,
+                project_id=self._project_id,
+                part_paths=self._part_paths,
+                sheet_width=self._sheet_width,
+                sheet_height=self._sheet_height,
+                spacing=self._spacing,
+                allow_rotate=self._allow_rotate,
+                output_dir=self._output_dir,
+            )
+            self.finished.emit(result)
+        except Exception as e:
+            self.error.emit(str(e))
 
 
 # ─────────────────────────────────────────────────────────
@@ -1359,32 +1779,49 @@ class EditorPage(QWidget):
         iz_lay.setContentsMargins(0, 0, 0, 0)
         iz_lay.setSpacing(8)
 
-        # Floating File Chip
+        # Floating File Chip (ChatGPT style thumbnail card)
         self.file_chip = QFrame()
         self.file_chip.setObjectName("file_chip_floating")
         self.file_chip.setVisible(False)
         self.file_chip.setStyleSheet(
             "QFrame#file_chip_floating {"
-            "  background: #1a1040;"
-            "  border: 1px solid #7c3aed;"
-            "  border-radius: 10px;"
+            "  background: #141428;"
+            "  border: 1px solid #2a2a45;"
+            "  border-radius: 12px;"
+            "  padding: 2px;"
             "}"
         )
         fc_lay = QHBoxLayout(self.file_chip)
-        fc_lay.setContentsMargins(10, 4, 6, 4)
-        fc_lay.setSpacing(6)
+        fc_lay.setContentsMargins(6, 6, 8, 6)
+        fc_lay.setSpacing(8)
+
+        # Image thumbnail preview
+        self.file_chip_thumb = QLabel()
+        self.file_chip_thumb.setFixedSize(44, 44)
+        self.file_chip_thumb.setStyleSheet(
+            "QLabel {"
+            "  border-radius: 8px;"
+            "  background: #0b0b18;"
+            "}"
+        )
+        self.file_chip_thumb.setScaledContents(True)
+        self.file_chip_thumb.setVisible(False)
+
         self.file_chip_label = QLabel("")
-        self.file_chip_label.setStyleSheet("font-size: 10px; color: #b090ff; font-weight: bold; background:transparent;")
+        self.file_chip_label.setStyleSheet("font-size: 11px; color: #cdd6f4; font-weight: 600; background:transparent;")
+
         # ✕ remove button
         self.btn_remove_file = QPushButton("✕")
         self.btn_remove_file.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        self.btn_remove_file.setFixedSize(18, 18)
+        self.btn_remove_file.setFixedSize(20, 20)
         self.btn_remove_file.setStyleSheet(
-            "QPushButton { background: transparent; border: none; color: #7c3aed;"
-            "  font-size: 12px; font-weight: bold; padding:0; }"
-            "QPushButton:hover { color: #ff6b6b; }"
+            "QPushButton { background: #22223a; border: none; color: #a0a0c0;"
+            "  font-size: 11px; font-weight: bold; border-radius: 10px; padding:0; }"
+            "QPushButton:hover { background: #ff4d4d; color: #ffffff; }"
         )
         self.btn_remove_file.clicked.connect(self._clear_file)
+
+        fc_lay.addWidget(self.file_chip_thumb)
         fc_lay.addWidget(self.file_chip_label)
         fc_lay.addStretch()
         fc_lay.addWidget(self.btn_remove_file)
@@ -1449,14 +1886,26 @@ class EditorPage(QWidget):
         vp_lay.setContentsMargins(0, 0, 0, 0)
         vp_lay.setSpacing(0)
 
-        # Viewport Toolbar
-        # Viewport Header (Floating Clear)
+        # Viewport toolbar
+        vp_toolbar = QWidget()
+        vp_toolbar.setObjectName("viewport_toolbar")
+        vp_tb_lay = QHBoxLayout(vp_toolbar)
+        vp_tb_lay.setContentsMargins(12, 6, 12, 6)
+        vp_tb_lay.setSpacing(8)
+
+        self.btn_nest = QPushButton("🧩 Nest Parts")
+        self.btn_nest.setObjectName("v_tool_btn")
+        self.btn_nest.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        self.btn_nest.clicked.connect(self._open_nesting_dialog)
+
         self.btn_clear_vp = QPushButton("CLEAR VIEW")
         self.btn_clear_vp.setObjectName("btn_clear_viewport")
         self.btn_clear_vp.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
-        
-        # Place clear button at top right before viewport
-        vp_lay.addWidget(self.btn_clear_vp, 0, Qt.AlignmentFlag.AlignRight)
+
+        vp_tb_lay.addWidget(self.btn_nest)
+        vp_tb_lay.addStretch()
+        vp_tb_lay.addWidget(self.btn_clear_vp)
+        vp_lay.addWidget(vp_toolbar)
         
         self.viewport = ViewportWidget()
         self.btn_clear_vp.clicked.connect(self.viewport.clear_view)
@@ -1481,6 +1930,8 @@ class EditorPage(QWidget):
         self._mode = mode
         self._folder = folder
         self._uploaded_file = ""
+        self.file_chip_thumb.clear()
+        self.file_chip_thumb.setVisible(False)
         self.file_chip.setVisible(False)
         self.chat_input.setPlainText("")
         self._details_visible = False
@@ -1493,6 +1944,7 @@ class EditorPage(QWidget):
             self.ws_chip.setText("📁  workspace")
         self.mode_text.setText(f"{mode} Mode")
         self.mode_icon.setText("🧊" if mode == "3D" else "📐")
+        self.btn_nest.setVisible(mode == "2D")
         
         # Clear chat
         while self.chat_layout.count() > 1:
@@ -1514,15 +1966,11 @@ class EditorPage(QWidget):
             self.add_message("AI", "The workspace folder no longer exists.")
             return
 
-        # Collect files, deduplicate by lowercased name
-        seen = set()
-        files = []
-        for ext in ["*.dxf", "*.stl", "*.obj", "*.step", "*.stp"]:
-            for f in list(p.glob(ext)) + list(p.glob(ext.upper())):
-                key = f.name.lower()
-                if key not in seen:
-                    seen.add(key)
-                    files.append(f)
+        files = collect_workspace_files(
+            self._folder,
+            {".dxf", ".stl", ".obj", ".step", ".stp"},
+            recursive=True,
+        )
 
         if not files:
             menu.addAction("No CAD files found").setEnabled(False)
@@ -1557,10 +2005,18 @@ class EditorPage(QWidget):
             self.add_message("AI", f"Workspace synchronized to: {folder}\nProject ID: {self.project_id}")
 
     def _pick_image(self):
-        f, _ = QFileDialog.getOpenFileName(self, "Select Image", self._folder or "", "Images (*.png *.jpg *.jpeg *.svg)")
+        f, _ = QFileDialog.getOpenFileName(self, "Select Image", self._folder or "", "Images (*.png *.jpg *.jpeg *.svg *.webp *.bmp)")
         if f:
             self._uploaded_file = f
             self.file_chip_label.setText(Path(f).name)
+            pix = QPixmap(f)
+            if not pix.isNull():
+                scaled = pix.scaled(44, 44, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+                rect = QRect((scaled.width() - 44) // 2, (scaled.height() - 44) // 2, 44, 44)
+                self.file_chip_thumb.setPixmap(scaled.copy(rect))
+                self.file_chip_thumb.setVisible(True)
+            else:
+                self.file_chip_thumb.setVisible(False)
             self.file_chip.setVisible(True)
             self.add_message("User", f"Attached image: {Path(f).name}")
             self._rebuild_inputs()
@@ -1574,12 +2030,25 @@ class EditorPage(QWidget):
         f, _ = QFileDialog.getOpenFileName(self, "Select CAD File", self._folder or "", file_filter)
         if f:
             self._uploaded_file = f
+            ext = Path(f).suffix.lower()
+            if ext in {".png", ".jpg", ".jpeg", ".svg", ".webp", ".bmp"}:
+                pix = QPixmap(f)
+                if not pix.isNull():
+                    scaled = pix.scaled(44, 44, Qt.AspectRatioMode.KeepAspectRatioByExpanding, Qt.TransformationMode.SmoothTransformation)
+                    rect = QRect((scaled.width() - 44) // 2, (scaled.height() - 44) // 2, 44, 44)
+                    self.file_chip_thumb.setPixmap(scaled.copy(rect))
+                    self.file_chip_thumb.setVisible(True)
+                else:
+                    self.file_chip_thumb.setVisible(False)
+            else:
+                self.file_chip_thumb.clear()
+                self.file_chip_thumb.setVisible(False)
+
             self.file_chip_label.setText(Path(f).name)
             self.file_chip.setVisible(True)
             self.add_message("User", f"Attached model: {Path(f).name}")
             self._rebuild_inputs()
             # Preview if CAD
-            ext = Path(f).suffix.lower()
             if ext in {".stl", ".dxf"}:
                 self.viewport.display_file(f)
 
@@ -1587,6 +2056,8 @@ class EditorPage(QWidget):
         """Remove the currently attached file/image."""
         self._uploaded_file = ""
         self.file_chip_label.setText("")
+        self.file_chip_thumb.clear()
+        self.file_chip_thumb.setVisible(False)
         self.file_chip.setVisible(False)
         self._rebuild_inputs()
 
@@ -1627,18 +2098,15 @@ class EditorPage(QWidget):
             self.btn_details.setText("MORE DETAILS")
         
         if show_details:
-            # Re-enable the details section if it was visible before toggle, 
-            # or just keep the button available.
-            self.scroll.setVisible(self._details_visible)
+            self._details_visible = True
+            self.scroll.setVisible(True)
+            self.btn_details.setText("LESS DETAILS")
 
             # Add fields only for generation modes
             if self._mode == "2D":
                 self._add_field("part_width_mm",   "PART WIDTH (mm)",    "100.0")
                 self._add_field("part_height_mm",  "PART HEIGHT (mm)",   "100.0")
-                self._add_field("sheet_width_mm",  "SHEET WIDTH (mm)",   "300.0")
-                self._add_field("sheet_height_mm", "SHEET HEIGHT (mm)",  "200.0")
                 self._add_field("tool_diameter_mm","TOOL DIAMETER (mm)", "3.0")
-                self._add_field("margin_mm",        "MARGIN (mm)",        "10.0")
             else:
                 self._add_field("height", "HEIGHT (mm)", "100.0")
                 self._add_field("width",  "WIDTH (mm)",  "100.0")
@@ -1672,11 +2140,14 @@ class EditorPage(QWidget):
             self.add_message("AI", "⚠️ Please enter a description or command before generating.")
             return
 
-        if self.scroll.isVisible():
+        if self.inputs:
             empty_fields = [k for k, v in self.inputs.items() if not v.text().strip()]
             if empty_fields:
-                labels = ", ".join(k.upper() for k in empty_fields)
-                self.add_message("AI", f"⚠️ Please fill in all required fields: {labels}")
+                self._details_visible = True
+                self.scroll.setVisible(True)
+                self.btn_details.setText("LESS DETAILS")
+                labels = ", ".join(k.replace("_mm", "").replace("_", " ").upper() for k in empty_fields)
+                self.add_message("AI", f"⚠️ Please fill in all required More Details fields before proceeding: {labels}")
                 return
         # ── End Validation ────────────────────────────────────────────
 
@@ -1691,6 +2162,9 @@ class EditorPage(QWidget):
         self.add_message("User", prompt)
         self.add_message("AI", f"⏳ Starting {pm} pipeline in background... The UI stays responsive.")
         self.chat_input.setPlainText("")
+
+        # ── Show Viewport Loading Animation ────────────────────────────
+        self.viewport.show_loading(f"GENERATING {pm.upper()} DESIGN")
 
         # ── Disable button while processing ───────────────────────────
         self.btn_process.setEnabled(False)
@@ -1725,6 +2199,7 @@ class EditorPage(QWidget):
     def _on_pipeline_finished(self, res_file: str):
         self.btn_process.setEnabled(True)
         self.btn_process.setText("Generate")
+        self.viewport.hide_loading()
         if res_file and os.path.exists(res_file):
             self.add_message("AI", "✨ Processing complete. Viewport updated!")
             self.viewport.display_file(os.path.abspath(res_file))
@@ -1734,7 +2209,126 @@ class EditorPage(QWidget):
     def _on_pipeline_error(self, error_msg: str):
         self.btn_process.setEnabled(True)
         self.btn_process.setText("Generate")
+        self.viewport.hide_loading()
         self.add_message("AI", f"❌ Error: {error_msg}")
+
+    def _ensure_project(self) -> bool:
+        if not self._folder:
+            return False
+        if not self.project_id:
+            self.project_id = self.win.db.create_project(
+                self.win.user_id,
+                Path(self._folder).name,
+                f"Project folder: {self._folder}",
+            )
+        return True
+
+    def _collect_nestable_dxfs(self):
+        jobs = self.win.db.get_user_jobs(self.win.user_id, limit=100)
+        folder_key = ""
+        if self._folder:
+            folder_key = os.path.normcase(os.path.abspath(self._folder))
+
+        files_by_path = {}
+        for path in collect_workspace_files(self._folder, {".dxf"}, recursive=True):
+            abs_path = os.path.normcase(os.path.abspath(str(path)))
+            if folder_key and not abs_path.startswith(folder_key):
+                continue
+            files_by_path[abs_path] = {"path": str(path), "name": path.name}
+
+        for job in jobs:
+            _jid, _jtype, _dtype, fmt, status, _prompt, _created, _inf, outf, outpath = job
+            if fmt != "DXF" or status != "COMPLETED" or not outpath:
+                continue
+            if not os.path.isfile(outpath):
+                continue
+            if folder_key and not os.path.normcase(os.path.abspath(outpath)).startswith(folder_key):
+                continue
+            key = os.path.normcase(os.path.abspath(outpath))
+            if key in files_by_path:
+                continue
+            files_by_path[key] = {"path": outpath, "name": outf or Path(outpath).name}
+
+        return sorted(files_by_path.values(), key=lambda x: x["name"].lower())
+
+    def _open_nesting_dialog(self):
+        if self._mode != "2D":
+            return
+        if not self._ensure_project():
+            self.add_message("AI", "⚠️ Please set a workspace folder first (use the + menu).")
+            return
+
+        dialog = NestingDialog(self, self._collect_nestable_dxfs())
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+
+        parts = dialog.selected_parts()
+        if not parts:
+            QMessageBox.warning(self, "Nest Parts", "Select at least one DXF part to nest.")
+            return
+
+        sheet_w, sheet_h = dialog.sheet_size()
+        self._nest_sheet_size = (sheet_w, sheet_h)
+        self.add_message(
+            "AI",
+            f"⏳ Nesting {sum(q for _, q in parts)} part(s) onto "
+            f"{sheet_w:g}x{sheet_h:g}mm sheet...",
+        )
+        self.viewport.show_loading("NESTING PARTS ON SHEET")
+        self.btn_nest.setEnabled(False)
+        self.btn_nest.setText("Nesting...")
+
+        self._nest_thread = QThread()
+        self._nest_worker = NestingWorker(
+            pipeline=self.win.pipeline,
+            user_id=self.win.user_id,
+            project_id=self.project_id,
+            part_paths=parts,
+            sheet_width=sheet_w,
+            sheet_height=sheet_h,
+            spacing=dialog.spacing_mm(),
+            allow_rotate=dialog.rotation_allowed(),
+            output_dir=self._folder or None,
+        )
+        self._nest_worker.moveToThread(self._nest_thread)
+        self._nest_thread.started.connect(self._nest_worker.run)
+        self._nest_worker.finished.connect(self._on_nesting_finished)
+        self._nest_worker.error.connect(self._on_nesting_error)
+        self._nest_worker.finished.connect(self._nest_thread.quit)
+        self._nest_worker.error.connect(self._nest_thread.quit)
+        self._nest_thread.finished.connect(self._nest_worker.deleteLater)
+        self._nest_thread.finished.connect(self._nest_thread.deleteLater)
+        self._nest_thread.start()
+
+    def _on_nesting_finished(self, result):
+        self.btn_nest.setEnabled(True)
+        self.btn_nest.setText("🧩 Nest Parts")
+        self.viewport.hide_loading()
+
+        output_path, placements, unplaced_count = result
+        if not output_path or not os.path.exists(output_path):
+            self.add_message("AI", "❌ Nesting failed. No output file was generated.")
+            QMessageBox.critical(self, "Nest Parts", "Nesting failed. No output file was generated.")
+            return
+
+        from core.nesting import sheet_utilization
+
+        sheet_w, sheet_h = getattr(self, "_nest_sheet_size", (1200.0, 600.0))
+        utilization = sheet_utilization(placements, parts=[], sheet_width=sheet_w, sheet_height=sheet_h)
+        summary = f"Sheet utilization: {utilization:.1f}%"
+        if unplaced_count:
+            summary += f"\n⚠️ {unplaced_count} part(s) could not fit and were left out."
+
+        self.viewport.display_file(os.path.abspath(output_path))
+        self.add_message("AI", f"✨ Nesting complete.\n{summary}")
+        QMessageBox.information(self, "Nest Parts", summary)
+
+    def _on_nesting_error(self, error_msg: str):
+        self.btn_nest.setEnabled(True)
+        self.btn_nest.setText("🧩 Nest Parts")
+        self.viewport.hide_loading()
+        self.add_message("AI", f"❌ Nesting error: {error_msg}")
+        QMessageBox.critical(self, "Nest Parts", error_msg)
 
     def _open_cad_app(self):
         """Launch the user's configured CAD application."""

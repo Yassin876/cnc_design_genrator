@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import logging
 import os
+import time
 from pathlib import Path
 
 import numpy as np
@@ -79,6 +80,7 @@ def segment_object(
     يرجع قناع ثنائي (numpy array) للجسم نفسه (مش الخلفية) — inverted mask زي
     النوت بوك بالظبط.
     """
+    start_time = time.perf_counter()
     state = sam_processor.set_image(image)
     sam_processor.add_geometric_prompt(box=box, label=cfg.box_label, state=state)
 
@@ -90,5 +92,8 @@ def segment_object(
     else:
         mask_np = np.array(inverted_masks).squeeze()
 
+    elapsed = time.perf_counter() - start_time
+    print(f"[TIMING] Mask generation took {elapsed:.2f} seconds")
+    log.info("[TIMING] Mask generation took %.2f seconds", elapsed)
     log.info("mask shape: %s", mask_np.shape)
     return mask_np
