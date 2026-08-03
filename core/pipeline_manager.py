@@ -175,18 +175,35 @@ class PipelineManager:
         user_id,
         project_id,
         part_paths,
-        sheet_width,
-        sheet_height,
+        stock_sheets=None,
+        sheet_width=1200.0,
+        sheet_height=600.0,
         spacing=5.0,
         allow_rotate=True,
+        nesting_mode="Finish priority parts first",
+        continue_on_incomplete=True,
         output_dir=None,
     ):
         """
-        Pack multiple DXF parts onto one sheet.
-        part_paths: list of DXF paths or (path, qty) tuples.
-        Returns (output_path, placements, unplaced_count) or (None, [], unplaced_count).
+        Pack multiple DXF parts onto stock sheets.
+        Handles both new multi-sheet inventory/priority signatures and legacy single-sheet calls.
+        Returns NestResult summary dictionary.
         """
-        from core.nesting import nest_parts
+        from core.nesting import nest_parts, StockSheet, NestablePart
+
+        # ── Legacy Migration Check ──────────────────────────────────────
+        if stock_sheets is None:
+            stock_sheets = [
+                StockSheet(
+                    name="Legacy Sheet",
+                    material="Default",
+                    width=sheet_width if sheet_width is not None else 1200.0,
+                    height=sheet_height if sheet_height is not None else 600.0,
+                    thickness=1.0,
+                    available_quantity=1,
+                    unlimited_quantity=True,
+                )
+            ]
 
         job_id = self.db.create_job(
             user_id=user_id,
@@ -194,39 +211,60 @@ class PipelineManager:
             job_type="Nest",
             design_type="2D",
             output_format="DXF",
-            text_prompt=f"Nest {len(part_paths)} part(s) on {sheet_width}x{sheet_height}mm sheet",
+            text_prompt=f"Nest {len(part_paths)} part(s) on stock sheet inventory",
         )
 
         start_time = datetime.now()
-        save_dir = output_dir if output_dir else "outputs"
+        save_dir = output_dir if output_dir else os.path.join("outputs", "nesting_results", datetime.now().strftime("%Y-%m-%d_%H-%M-%S"))
         os.makedirs(save_dir, exist_ok=True)
-        output_dxf = os.path.join(
-            save_dir, f"nested_sheet_{datetime.now().strftime('%H%M%S')}.dxf"
-        )
 
         try:
-            output_path, placements, unplaced_count = nest_parts(
+            summary_result = nest_parts(
                 parts=part_paths,
-                sheet_width=sheet_width,
-                sheet_height=sheet_height,
+                stock_sheets=stock_sheets,
                 spacing=spacing,
                 allow_rotate=allow_rotate,
-                output_path=output_dxf,
+                nesting_mode=nesting_mode,
+                continue_on_incomplete=continue_on_incomplete,
+                output_dir=save_dir,
             )
 
             duration = int((datetime.now() - start_time).total_seconds() * 1000)
-            out_file_id = self.db.log_output_file(
-                job_id, os.path.basename(output_path), output_path, "DXF"
-            )
+
+            # Log primary output sheet DXF if any were generated
+            first_sheet_path = None
+            if summary_result.get("sheets"):
+                first_sheet_path = summary_result["sheets"][0]["dxf_path"]
+                out_file_id = self.db.log_output_file(
+                    job_id, os.path.basename(first_sheet_path), first_sheet_path, "DXF"
+                )
+            else:
+                out_file_id = None
+
             self.db.update_job_status(
                 job_id, "COMPLETED", output_file_id=out_file_id, processing_time_ms=duration
             )
-            return output_path, placements, unplaced_count
+            return summary_result
 
         except Exception as e:
             print(f"Nesting Error: {e}")
             self.db.update_job_status(job_id, "FAILED")
-            return None, [], len(part_paths)
+            return {
+                "output_dir": save_dir,
+                "total_parts_required": len(part_paths),
+                "total_parts_placed": 0,
+                "total_parts_unplaced": len(part_paths),
+                "total_sheets_used": 0,
+                "total_utilization": 0.0,
+                "total_waste": 100.0,
+                "completed_priority_groups": 0,
+                "incomplete_priority_groups": 1,
+                "priority_completion": [],
+                "production_ready_sheets": [],
+                "stock_usage": [],
+                "unplaced_parts": [{"reason": str(e)}],
+                "sheets": [],
+            }
 
     def _generate_output_path(self, prompt, ext, output_dir=None, input_file_path=None):
         # Use the user-selected workspace folder, or fall back to 'outputs/'

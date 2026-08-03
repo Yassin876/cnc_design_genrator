@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QFrame, QScrollArea, QFileDialog, QLineEdit,
     QTextEdit, QSizePolicy, QSpacerItem, QMenu, QMessageBox,
     QDialog, QCheckBox, QSpinBox, QDoubleSpinBox, QDialogButtonBox,
+    QTableWidget, QTableWidgetItem, QHeaderView, QComboBox, QRadioButton, QButtonGroup, QTabWidget, QGroupBox,
 )
 import math
 from PyQt6.QtCore import Qt, pyqtSignal, QSize, QTimer, QThread, QObject, QRect, QRectF
@@ -1413,7 +1414,7 @@ class ViewportWidget(QStackedWidget):
 
 
 # ─────────────────────────────────────────────────────────
-#  NESTING DIALOG
+#  NESTING DIALOG (Multi-Sheet, Stock Inventory & Priority)
 # ─────────────────────────────────────────────────────────
 class NestingDialog(QDialog):
     def __init__(self, parent, dxf_files: list):
@@ -1421,131 +1422,603 @@ class NestingDialog(QDialog):
         dxf_files: list of dicts with keys path, name
         """
         super().__init__(parent)
-        self.setWindowTitle("Nest Parts")
+        self.setWindowTitle("Nest Parts — Stock Inventory & Production Priority")
         self.setObjectName("nesting_dialog")
-        self.setMinimumWidth(480)
-        self.setMinimumHeight(420)
-        self._rows = []
+        self.setMinimumWidth(820)
+        self.setMinimumHeight(650)
 
         root = QVBoxLayout(self)
-        root.setContentsMargins(20, 20, 20, 20)
-        root.setSpacing(14)
+        root.setContentsMargins(18, 18, 18, 18)
+        root.setSpacing(12)
 
-        title = QLabel("Select parts to nest onto a sheet")
-        title.setObjectName("section_header")
-        root.addWidget(title)
+        # Title & Subtitle
+        header_lay = QVBoxLayout()
+        title = QLabel("🧩 DXF Nesting & Stock Inventory Management")
+        title.setStyleSheet("font-size: 16px; font-weight: bold; color: #cdd6f4;")
+        hint = QLabel("Set part quantities, thicknesses, and production priorities, then configure stock sheet inventory.")
+        hint.setStyleSheet("font-size: 11px; color: #a0a0c0;")
+        header_lay.addWidget(title)
+        header_lay.addWidget(hint)
+        root.addLayout(header_lay)
 
-        hint = QLabel("Choose DXF outputs and set quantity for each part.")
-        hint.setObjectName("muted")
-        root.addWidget(hint)
+        # Tab Widget for organized views
+        tabs = QTabWidget()
+        tabs.setStyleSheet(
+            "QTabWidget::pane { border: 1px solid #2a2a45; background: #141428; border-radius: 6px; }"
+            "QTabBar::tab { background: #1e1e36; color: #a0a0c0; padding: 8px 16px; border-top-left-radius: 4px; border-top-right-radius: 4px; font-weight: bold; }"
+            "QTabBar::tab:selected { background: #7b2fff; color: #ffffff; }"
+        )
 
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
-        list_host = QWidget()
-        list_lay = QVBoxLayout(list_host)
-        list_lay.setContentsMargins(0, 0, 0, 0)
-        list_lay.setSpacing(6)
+        # Tab 1: Parts Selection & Priority
+        parts_page = QWidget()
+        pp_lay = QVBoxLayout(parts_page)
+        pp_lay.setContentsMargins(12, 12, 12, 12)
+        pp_lay.setSpacing(8)
 
-        if not dxf_files:
-            empty = QLabel("No completed DXF outputs found for this workspace.")
-            empty.setObjectName("muted")
-            empty.setWordWrap(True)
-            list_lay.addWidget(empty)
-        else:
-            for item in dxf_files:
-                row = QHBoxLayout()
-                chk = QCheckBox()
-                chk.setChecked(True)
-                name_lbl = QLabel(item["name"])
-                name_lbl.setToolTip(item["path"])
-                qty = QSpinBox()
-                qty.setRange(1, 999)
-                qty.setValue(1)
-                qty.setFixedWidth(64)
-                qty.setObjectName("inp_small")
-                row.addWidget(chk)
-                row.addWidget(name_lbl, 1)
-                row.addWidget(QLabel("Qty"))
-                row.addWidget(qty)
-                list_lay.addLayout(row)
-                self._rows.append({"check": chk, "path": item["path"], "qty": qty})
+        # Reorder / Quick Action bar
+        parts_ctrl_lay = QHBoxLayout()
+        btn_set_priority = QPushButton("⚡ Set as High Priority")
+        btn_set_priority.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_set_priority.setStyleSheet("background: #f59e0b; color: #000000; font-weight: bold; border-radius: 4px; padding: 4px 10px;")
+        btn_set_priority.clicked.connect(self._set_selected_high_priority)
 
-        list_lay.addStretch()
-        scroll.setWidget(list_host)
-        root.addWidget(scroll, 1)
+        btn_move_up = QPushButton("▲ Move Up")
+        btn_move_up.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_move_up.clicked.connect(self._move_part_up)
 
-        opts = QFrame()
-        opts.setObjectName("settings_section")
-        opts_lay = QVBoxLayout(opts)
-        opts_lay.setContentsMargins(14, 14, 14, 14)
-        opts_lay.setSpacing(10)
+        btn_move_down = QPushButton("▼ Move Down")
+        btn_move_down.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_move_down.clicked.connect(self._move_part_down)
 
-        sheet_row = QHBoxLayout()
-        self.sheet_w = QDoubleSpinBox()
-        self.sheet_w.setRange(1, 10000)
-        self.sheet_w.setValue(1200)
-        self.sheet_w.setSuffix(" mm")
-        self.sheet_w.setObjectName("inp_small")
-        self.sheet_h = QDoubleSpinBox()
-        self.sheet_h.setRange(1, 10000)
-        self.sheet_h.setValue(600)
-        self.sheet_h.setSuffix(" mm")
-        self.sheet_h.setObjectName("inp_small")
-        sheet_row.addWidget(QLabel("Sheet width"))
-        sheet_row.addWidget(self.sheet_w)
-        sheet_row.addSpacing(12)
-        sheet_row.addWidget(QLabel("Sheet height"))
-        sheet_row.addWidget(self.sheet_h)
-        opts_lay.addLayout(sheet_row)
+        parts_ctrl_lay.addWidget(btn_set_priority)
+        parts_ctrl_lay.addWidget(btn_move_up)
+        parts_ctrl_lay.addWidget(btn_move_down)
+        parts_ctrl_lay.addStretch()
+        pp_lay.addLayout(parts_ctrl_lay)
 
-        spacing_row = QHBoxLayout()
-        self.spacing = QDoubleSpinBox()
-        self.spacing.setRange(0, 500)
-        self.spacing.setValue(5)
-        self.spacing.setSuffix(" mm")
-        self.spacing.setObjectName("inp_small")
-        spacing_row.addWidget(QLabel("Spacing"))
-        spacing_row.addWidget(self.spacing)
-        spacing_row.addStretch()
-        opts_lay.addLayout(spacing_row)
+        # Parts Table
+        self.parts_table = QTableWidget()
+        self.parts_table.setColumnCount(6)
+        self.parts_table.setHorizontalHeaderLabels(["Nest", "DXF Part File", "Qty", "Thickness (mm)", "Priority", "Priority Order"])
+        self.parts_table.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        self.parts_table.verticalHeader().setVisible(False)
+        self.parts_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.parts_table.setStyleSheet("QTableWidget { background: #111122; gridline-color: #2a2a45; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; padding: 6px; }")
+        
+        self._populate_parts_table(dxf_files)
+        pp_lay.addWidget(self.parts_table)
+        tabs.addTab(parts_page, "1. Parts & Priorities")
 
-        self.allow_rotate = QCheckBox("Allow rotation (90°)")
-        self.allow_rotate.setChecked(True)
-        opts_lay.addWidget(self.allow_rotate)
-        root.addWidget(opts)
+        # Tab 2: Stock Sheets Inventory
+        stock_page = QWidget()
+        sp_lay = QVBoxLayout(stock_page)
+        sp_lay.setContentsMargins(12, 12, 12, 12)
+        sp_lay.setSpacing(8)
 
+        stock_ctrl_lay = QHBoxLayout()
+        btn_add_stock = QPushButton("➕ Add Stock Sheet")
+        btn_add_stock.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_add_stock.setStyleSheet("background: #00e676; color: #000000; font-weight: bold; border-radius: 4px; padding: 4px 10px;")
+        btn_add_stock.clicked.connect(self._add_stock_row)
+
+        btn_del_stock = QPushButton("🗑️ Delete Selected Sheet")
+        btn_del_stock.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+        btn_del_stock.setStyleSheet("background: #ff4d4d; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 4px 10px;")
+        btn_del_stock.clicked.connect(self._delete_selected_stock_row)
+
+        stock_ctrl_lay.addWidget(btn_add_stock)
+        stock_ctrl_lay.addWidget(btn_del_stock)
+        stock_ctrl_lay.addStretch()
+        sp_lay.addLayout(stock_ctrl_lay)
+
+        self.stock_table = QTableWidget()
+        self.stock_table.setColumnCount(6)
+        self.stock_table.setHorizontalHeaderLabels(["Material Name", "Width (mm)", "Height (mm)", "Thickness (mm)", "Available Qty", "Unlimited Stock"])
+        self.stock_table.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        self.stock_table.verticalHeader().setVisible(False)
+        self.stock_table.setSelectionBehavior(QTableWidget.SelectionBehavior.SelectRows)
+        self.stock_table.setStyleSheet("QTableWidget { background: #111122; gridline-color: #2a2a45; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; padding: 6px; }")
+        
+        self._populate_default_stock_sheets()
+        sp_lay.addWidget(self.stock_table)
+        tabs.addTab(stock_page, "2. Stock Sheet Inventory")
+
+        # Tab 3: Nesting Settings
+        settings_page = QWidget()
+        set_lay = QVBoxLayout(settings_page)
+        set_lay.setContentsMargins(16, 16, 16, 16)
+        set_lay.setSpacing(14)
+
+        # Spacing & Rotation Box
+        box_gen = QGroupBox("Global Nesting Parameters")
+        box_gen.setStyleSheet("QGroupBox { color: #a090ff; font-weight: bold; border: 1px solid #2a2a45; border-radius: 6px; margin-top: 8px; padding-top: 12px; }")
+        bg_lay = QVBoxLayout(box_gen)
+
+        sp_row = QHBoxLayout()
+        sp_row.addWidget(QLabel("Spacing between parts:"))
+        self.spacing_spin = QDoubleSpinBox()
+        self.spacing_spin.setRange(0, 500)
+        self.spacing_spin.setValue(5.0)
+        self.spacing_spin.setSuffix(" mm")
+        self.spacing_spin.setFixedWidth(100)
+        sp_row.addWidget(self.spacing_spin)
+        sp_row.addStretch()
+        bg_lay.addLayout(sp_row)
+
+        self.allow_rotate_chk = QCheckBox("Allow 90° Part Rotation")
+        self.allow_rotate_chk.setChecked(True)
+        bg_lay.addWidget(self.allow_rotate_chk)
+        set_lay.addWidget(box_gen)
+
+        # Nesting Mode Box
+        box_mode = QGroupBox("Nesting Strategy Mode")
+        box_mode.setStyleSheet("QGroupBox { color: #a090ff; font-weight: bold; border: 1px solid #2a2a45; border-radius: 6px; margin-top: 8px; padding-top: 12px; }")
+        bm_lay = QVBoxLayout(box_mode)
+
+        self.radio_mode_priority = QRadioButton("● Finish priority parts first (Complete urgent parts on earliest production sheets)")
+        self.radio_mode_priority.setChecked(True)
+        self.radio_mode_priority.setStyleSheet("color: #00e676; font-weight: bold;")
+        
+        self.radio_mode_optimize = QRadioButton("○ Optimize material usage (Maximize overall material utilization efficiency)")
+        self.radio_mode_optimize.setStyleSheet("color: #cdd6f4;")
+
+        bm_lay.addWidget(self.radio_mode_priority)
+        bm_lay.addWidget(self.radio_mode_optimize)
+
+        self.continue_incomplete_chk = QCheckBox("Continue nesting lower-priority parts when a priority group is incomplete")
+        self.continue_incomplete_chk.setChecked(True)
+        bm_lay.addSpacing(6)
+        bm_lay.addWidget(self.continue_incomplete_chk)
+        set_lay.addWidget(box_mode)
+
+        set_lay.addStretch()
+        tabs.addTab(settings_page, "3. Nesting Mode Settings")
+
+        root.addWidget(tabs, 1)
+
+        # Buttons
         buttons = QDialogButtonBox(
             QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
         )
-        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("Nest")
+        buttons.button(QDialogButtonBox.StandardButton.Ok).setText("🧩 Nest Parts")
         buttons.button(QDialogButtonBox.StandardButton.Ok).setObjectName("btn_primary")
-        buttons.accepted.connect(self.accept)
+        buttons.accepted.connect(self._on_accept_clicked)
         buttons.rejected.connect(self.reject)
         root.addWidget(buttons)
 
-    def selected_parts(self):
+    def _populate_parts_table(self, dxf_files: list):
+        self.parts_table.setRowCount(0)
+        if not dxf_files:
+            return
+
+        for item in dxf_files:
+            row = self.parts_table.rowCount()
+            self.parts_table.insertRow(row)
+
+            # Checkbox
+            chk = QCheckBox()
+            chk.setChecked(True)
+            w_chk = QWidget()
+            l_chk = QHBoxLayout(w_chk)
+            l_chk.addWidget(chk)
+            l_chk.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            l_chk.setContentsMargins(0, 0, 0, 0)
+            self.parts_table.setCellWidget(row, 0, w_chk)
+
+            # File name
+            name_item = QTableWidgetItem(item["name"])
+            name_item.setData(Qt.ItemDataRole.UserRole, item["path"])
+            self.parts_table.setItem(row, 1, name_item)
+
+            # Qty
+            qty_spin = QSpinBox()
+            qty_spin.setRange(1, 9999)
+            qty_spin.setValue(1)
+            self.parts_table.setCellWidget(row, 2, qty_spin)
+
+            # Thickness
+            t_spin = QDoubleSpinBox()
+            t_spin.setRange(0.1, 1000.0)
+            t_spin.setValue(18.0)
+            t_spin.setSuffix(" mm")
+            self.parts_table.setCellWidget(row, 3, t_spin)
+
+            # Priority combo
+            p_combo = QComboBox()
+            p_combo.addItems(["High", "Normal", "Low"])
+            p_combo.setCurrentText("Normal")
+            
+            # Priority order spin
+            po_spin = QSpinBox()
+            po_spin.setRange(1, 9999)
+            po_spin.setValue(100)
+
+            # Connect priority change to order helper
+            def _on_priority_change(text, pos_spin=po_spin):
+                if text == "High":
+                    pos_spin.setValue(10)
+                elif text == "Normal":
+                    pos_spin.setValue(100)
+                else:
+                    pos_spin.setValue(200)
+
+            p_combo.currentTextChanged.connect(_on_priority_change)
+
+            self.parts_table.setCellWidget(row, 4, p_combo)
+            self.parts_table.setCellWidget(row, 5, po_spin)
+
+    def _populate_default_stock_sheets(self):
+        default_sheets = [
+            {"material": "MDF", "width": 2440, "height": 1220, "thickness": 18.0, "qty": 10, "unlimited": False},
+            {"material": "MDF", "width": 2440, "height": 1220, "thickness": 12.0, "qty": 5, "unlimited": False},
+            {"material": "Acrylic", "width": 2000, "height": 1000, "thickness": 5.0, "qty": 3, "unlimited": False},
+        ]
+        self.stock_table.setRowCount(0)
+        for s in default_sheets:
+            self._add_stock_row_data(s["material"], s["width"], s["height"], s["thickness"], s["qty"], s["unlimited"])
+
+    def _add_stock_row(self):
+        self._add_stock_row_data("MDF", 2440, 1220, 18.0, 5, False)
+
+    def _add_stock_row_data(self, material, width, height, thickness, qty, unlimited):
+        row = self.stock_table.rowCount()
+        self.stock_table.insertRow(row)
+
+        mat_item = QTableWidgetItem(material)
+        self.stock_table.setItem(row, 0, mat_item)
+
+        w_spin = QDoubleSpinBox()
+        w_spin.setRange(1.0, 50000.0)
+        w_spin.setValue(float(width))
+        w_spin.setSuffix(" mm")
+        self.stock_table.setCellWidget(row, 1, w_spin)
+
+        h_spin = QDoubleSpinBox()
+        h_spin.setRange(1.0, 50000.0)
+        h_spin.setValue(float(height))
+        h_spin.setSuffix(" mm")
+        self.stock_table.setCellWidget(row, 2, h_spin)
+
+        t_spin = QDoubleSpinBox()
+        t_spin.setRange(0.1, 1000.0)
+        t_spin.setValue(float(thickness))
+        t_spin.setSuffix(" mm")
+        self.stock_table.setCellWidget(row, 3, t_spin)
+
+        q_spin = QSpinBox()
+        q_spin.setRange(0, 99999)
+        q_spin.setValue(int(qty))
+        self.stock_table.setCellWidget(row, 4, q_spin)
+
+        u_chk = QCheckBox()
+        u_chk.setChecked(bool(unlimited))
+        w_u = QWidget()
+        l_u = QHBoxLayout(w_u)
+        l_u.addWidget(u_chk)
+        l_u.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        l_u.setContentsMargins(0, 0, 0, 0)
+        self.stock_table.setCellWidget(row, 5, w_u)
+
+    def _delete_selected_stock_row(self):
+        curr = self.stock_table.currentRow()
+        if curr >= 0:
+            self.stock_table.removeRow(curr)
+
+    def _set_selected_high_priority(self):
+        row = self.parts_table.currentRow()
+        if row >= 0:
+            p_combo = self.parts_table.cellWidget(row, 4)
+            po_spin = self.parts_table.cellWidget(row, 5)
+            if p_combo:
+                p_combo.setCurrentText("High")
+            if po_spin:
+                po_spin.setValue(1)
+
+    def _move_part_up(self):
+        row = self.parts_table.currentRow()
+        if row > 0:
+            po_spin = self.parts_table.cellWidget(row, 5)
+            po_spin_prev = self.parts_table.cellWidget(row - 1, 5)
+            if po_spin and po_spin_prev:
+                val = po_spin.value()
+                po_spin.setValue(po_spin_prev.value())
+                po_spin_prev.setValue(val)
+            self.parts_table.selectRow(row - 1)
+
+    def _move_part_down(self):
+        row = self.parts_table.currentRow()
+        if row >= 0 and row < self.parts_table.rowCount() - 1:
+            po_spin = self.parts_table.cellWidget(row, 5)
+            po_spin_next = self.parts_table.cellWidget(row + 1, 5)
+            if po_spin and po_spin_next:
+                val = po_spin.value()
+                po_spin.setValue(po_spin_next.value())
+                po_spin_next.setValue(val)
+            self.parts_table.selectRow(row + 1)
+
+    def _on_accept_clicked(self):
+        # Validate Stock Sheets
+        sheets = self.get_stock_sheets()
+        if not sheets:
+            QMessageBox.warning(self, "Validation Error", "Please define at least one valid stock sheet in the Stock Inventory tab.")
+            return
+
+        for idx, s in enumerate(sheets, start=1):
+            if s["width"] <= 0 or s["height"] <= 0 or s["thickness"] <= 0:
+                QMessageBox.warning(self, "Validation Error", f"Stock sheet #{idx} has invalid dimensions. Width, Height, and Thickness must be > 0.")
+                return
+            if not s["unlimited_quantity"] and s["available_quantity"] < 0:
+                QMessageBox.warning(self, "Validation Error", f"Stock sheet #{idx} must have available quantity >= 0.")
+                return
+
+        parts = self.get_selected_parts()
+        if not parts:
+            QMessageBox.warning(self, "Validation Error", "Select at least one DXF part to nest.")
+            return
+
+        self.accept()
+
+    def get_selected_parts(self) -> list:
         parts = []
-        for row in self._rows:
-            if row["check"].isChecked():
-                parts.append((row["path"], row["qty"].value()))
+        for r in range(self.parts_table.rowCount()):
+            w_chk = self.parts_table.cellWidget(r, 0)
+            chk = w_chk.findChild(QCheckBox) if w_chk else None
+            if chk and chk.isChecked():
+                name_item = self.parts_table.item(r, 1)
+                path = name_item.data(Qt.ItemDataRole.UserRole)
+                name = name_item.text()
+
+                q_spin = self.parts_table.cellWidget(r, 2)
+                t_spin = self.parts_table.cellWidget(r, 3)
+                p_combo = self.parts_table.cellWidget(r, 4)
+                po_spin = self.parts_table.cellWidget(r, 5)
+
+                parts.append({
+                    "path": path,
+                    "name": name,
+                    "quantity": q_spin.value() if q_spin else 1,
+                    "thickness": t_spin.value() if t_spin else 18.0,
+                    "priority": p_combo.currentText() if p_combo else "Normal",
+                    "priority_order": po_spin.value() if po_spin else 100,
+                })
         return parts
 
-    def sheet_size(self):
-        return self.sheet_w.value(), self.sheet_h.value()
+    def get_stock_sheets(self) -> list:
+        sheets = []
+        for r in range(self.stock_table.rowCount()):
+            mat_item = self.stock_table.item(r, 0)
+            material = mat_item.text() if mat_item else "Default"
+            w_spin = self.stock_table.cellWidget(r, 1)
+            h_spin = self.stock_table.cellWidget(r, 2)
+            t_spin = self.stock_table.cellWidget(r, 3)
+            q_spin = self.stock_table.cellWidget(r, 4)
+            w_u = self.stock_table.cellWidget(r, 5)
+            u_chk = w_u.findChild(QCheckBox) if w_u else None
 
-    def spacing_mm(self):
-        return self.spacing.value()
+            sheets.append({
+                "material": material,
+                "width": w_spin.value() if w_spin else 1200.0,
+                "height": h_spin.value() if h_spin else 600.0,
+                "thickness": t_spin.value() if t_spin else 18.0,
+                "available_quantity": q_spin.value() if q_spin else 1,
+                "unlimited_quantity": u_chk.isChecked() if u_chk else False,
+            })
+        return sheets
 
-    def rotation_allowed(self):
-        return self.allow_rotate.isChecked()
+    def get_spacing_mm(self) -> float:
+        return self.spacing_spin.value()
+
+    def get_allow_rotate(self) -> bool:
+        return self.allow_rotate_chk.isChecked()
+
+    def get_nesting_mode(self) -> str:
+        return "Finish priority parts first" if self.radio_mode_priority.isChecked() else "Optimize material usage"
+
+    def get_continue_on_incomplete(self) -> bool:
+        return self.continue_incomplete_chk.isChecked()
+
+
+# ─────────────────────────────────────────────────────────
+#  NESTING SUMMARY DIALOG
+# ─────────────────────────────────────────────────────────
+class NestingSummaryDialog(QDialog):
+    def __init__(self, parent, summary_result: dict):
+        super().__init__(parent)
+        self.setWindowTitle("Nesting Results & Production Summary")
+        self.setObjectName("nesting_summary_dialog")
+        self.setMinimumWidth(800)
+        self.setMinimumHeight(600)
+        self.selected_dxf_file = None
+
+        root = QVBoxLayout(self)
+        root.setContentsMargins(18, 18, 18, 18)
+        root.setSpacing(12)
+
+        # Overview Header
+        total_req = summary_result.get("total_parts_required", 0)
+        total_placed = summary_result.get("total_parts_placed", 0)
+        total_unplaced = summary_result.get("total_parts_unplaced", 0)
+        sheets_used = summary_result.get("total_sheets_used", 0)
+        utilization = summary_result.get("total_utilization", 0.0)
+        waste = summary_result.get("total_waste", 0.0)
+
+        header_box = QFrame()
+        header_box.setStyleSheet("background: #1a1a35; border-radius: 8px; padding: 12px;")
+        hb_lay = QHBoxLayout(header_box)
+
+        lbl_placed = QLabel(f"<b>Parts Placed:</b> {total_placed} / {total_req}")
+        lbl_placed.setStyleSheet("color: #00e676; font-size: 13px;")
+        
+        lbl_sheets = QLabel(f"<b>Sheets Used:</b> {sheets_used}")
+        lbl_sheets.setStyleSheet("color: #cdd6f4; font-size: 13px;")
+
+        lbl_util = QLabel(f"<b>Material Efficiency:</b> {utilization:.1f}% (Waste: {waste:.1f}%)")
+        lbl_util.setStyleSheet("color: #a090ff; font-size: 13px;")
+
+        hb_lay.addWidget(lbl_placed)
+        hb_lay.addWidget(lbl_sheets)
+        hb_lay.addWidget(lbl_util)
+        root.addWidget(header_box)
+
+        tabs = QTabWidget()
+        tabs.setStyleSheet(
+            "QTabWidget::pane { border: 1px solid #2a2a45; background: #141428; border-radius: 6px; }"
+            "QTabBar::tab { background: #1e1e36; color: #a0a0c0; padding: 6px 14px; font-weight: bold; }"
+            "QTabBar::tab:selected { background: #7b2fff; color: #ffffff; }"
+        )
+
+        # 1. Output Sheets Tab
+        sheets_page = QWidget()
+        shp_lay = QVBoxLayout(sheets_page)
+        shp_lay.setContentsMargins(10, 10, 10, 10)
+
+        tbl_sheets = QTableWidget()
+        tbl_sheets.setColumnCount(6)
+        tbl_sheets.setHorizontalHeaderLabels(["Sheet #", "Stock Material", "Size (mm)", "Priority Level", "Utilization", "Action"])
+        tbl_sheets.horizontalHeader().setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        tbl_sheets.verticalHeader().setVisible(False)
+        tbl_sheets.setStyleSheet("QTableWidget { background: #111122; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; }")
+
+        sheets_list = summary_result.get("sheets", [])
+        tbl_sheets.setRowCount(len(sheets_list))
+        for r, s in enumerate(sheets_list):
+            tbl_sheets.setItem(r, 0, QTableWidgetItem(f"Sheet #{s['sheet_number']}"))
+            tbl_sheets.setItem(r, 1, QTableWidgetItem(f"{s['material']} ({s['thickness']:.1f}mm)"))
+            tbl_sheets.setItem(r, 2, QTableWidgetItem(f"{s['width']:.0f} x {s['height']:.0f} mm"))
+            
+            p_text = f"Priority Order {s['priority_order']} ({s['priority_level']})"
+            if s.get("has_mixed_priority"):
+                p_text += " [Mixed Fill]"
+            tbl_sheets.setItem(r, 3, QTableWidgetItem(p_text))
+            
+            tbl_sheets.setItem(r, 4, QTableWidgetItem(f"{s['utilization']:.1f}%"))
+
+            btn_view = QPushButton("👁️ Display in Viewport")
+            btn_view.setCursor(QCursor(Qt.CursorShape.PointingHandCursor))
+            btn_view.setStyleSheet("background: #7b2fff; color: #ffffff; font-weight: bold; border-radius: 4px; padding: 4px;")
+            
+            def _make_view_fn(path=s['dxf_path']):
+                def _fn():
+                    self.selected_dxf_file = path
+                    self.accept()
+                return _fn
+
+            btn_view.clicked.connect(_make_view_fn())
+            tbl_sheets.setCellWidget(r, 5, btn_view)
+
+        shp_lay.addWidget(tbl_sheets)
+        tabs.addTab(sheets_page, "Production Sheets Layouts")
+
+        # 2. Stock Usage Tab
+        stock_page = QWidget()
+        stp_lay = QVBoxLayout(stock_page)
+        stp_lay.setContentsMargins(10, 10, 10, 10)
+
+        tbl_stock = QTableWidget()
+        tbl_stock.setColumnCount(7)
+        tbl_stock.setHorizontalHeaderLabels(["Stock Name", "Material", "Thickness", "Available", "Used", "Remaining", "Avg Utilization"])
+        tbl_stock.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        tbl_stock.verticalHeader().setVisible(False)
+        tbl_stock.setStyleSheet("QTableWidget { background: #111122; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; }")
+
+        stock_usage = summary_result.get("stock_usage", [])
+        tbl_stock.setRowCount(len(stock_usage))
+        for r, st in enumerate(stock_usage):
+            tbl_stock.setItem(r, 0, QTableWidgetItem(st["name"]))
+            tbl_stock.setItem(r, 1, QTableWidgetItem(st["material"]))
+            tbl_stock.setItem(r, 2, QTableWidgetItem(f"{st['thickness']:.1f} mm"))
+            tbl_stock.setItem(r, 3, QTableWidgetItem("Unlimited" if st["unlimited_quantity"] else str(st["available_quantity"])))
+            tbl_stock.setItem(r, 4, QTableWidgetItem(str(st["used_quantity"])))
+            tbl_stock.setItem(r, 5, QTableWidgetItem("Unlimited" if st["unlimited_quantity"] else str(st["remaining_quantity"])))
+            tbl_stock.setItem(r, 6, QTableWidgetItem(f"{st['average_utilization']:.1f}%"))
+
+        stp_lay.addWidget(tbl_stock)
+        tabs.addTab(stock_page, "Stock Inventory Usage")
+
+        # 3. Priority Completion Tab
+        priority_page = QWidget()
+        prp_lay = QVBoxLayout(priority_page)
+        prp_lay.setContentsMargins(10, 10, 10, 10)
+
+        tbl_prio = QTableWidget()
+        tbl_prio.setColumnCount(5)
+        tbl_prio.setHorizontalHeaderLabels(["Priority Order", "Required Qty", "Placed Qty", "Unplaced Qty", "Group Status"])
+        tbl_prio.horizontalHeader().setSectionResizeMode(0, QHeaderView.ResizeMode.Stretch)
+        tbl_prio.verticalHeader().setVisible(False)
+        tbl_prio.setStyleSheet("QTableWidget { background: #111122; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; }")
+
+        priority_comp = summary_result.get("priority_completion", [])
+        tbl_prio.setRowCount(len(priority_comp))
+        for r, pc in enumerate(priority_comp):
+            tbl_prio.setItem(r, 0, QTableWidgetItem(f"Priority Order {pc['priority_order']}"))
+            tbl_prio.setItem(r, 1, QTableWidgetItem(str(pc["required"])))
+            tbl_prio.setItem(r, 2, QTableWidgetItem(str(pc["placed"])))
+            tbl_prio.setItem(r, 3, QTableWidgetItem(str(pc["unplaced"])))
+            
+            st_item = QTableWidgetItem(pc["status"])
+            if pc["status"] == "Complete":
+                st_item.setForeground(QColor("#00e676"))
+            else:
+                st_item.setForeground(QColor("#ff4d4d"))
+            tbl_prio.setItem(r, 4, st_item)
+
+        prp_lay.addWidget(tbl_prio)
+        tabs.addTab(priority_page, "Priority Group Statuses")
+
+        # 4. Unplaced Parts Report Tab
+        unplaced_page = QWidget()
+        upp_lay = QVBoxLayout(unplaced_page)
+        upp_lay.setContentsMargins(10, 10, 10, 10)
+
+        unplaced_list = summary_result.get("unplaced_parts", [])
+        if not unplaced_list:
+            lbl_all_placed = QLabel("✨ All required parts were successfully nested onto stock sheets!")
+            lbl_all_placed.setStyleSheet("color: #00e676; font-size: 14px; font-weight: bold;")
+            lbl_all_placed.setAlignment(Qt.AlignmentFlag.AlignCenter)
+            upp_lay.addWidget(lbl_all_placed)
+        else:
+            tbl_unplaced = QTableWidget()
+            tbl_unplaced.setColumnCount(6)
+            tbl_unplaced.setHorizontalHeaderLabels(["Part Name", "Thickness", "Priority", "Required", "Unplaced", "Failure Reason"])
+            tbl_unplaced.horizontalHeader().setSectionResizeMode(5, QHeaderView.ResizeMode.Stretch)
+            tbl_unplaced.verticalHeader().setVisible(False)
+            tbl_unplaced.setStyleSheet("QTableWidget { background: #111122; color: #cdd6f4; } QHeaderView::section { background: #1a1a35; color: #a090ff; font-weight: bold; }")
+
+            tbl_unplaced.setRowCount(len(unplaced_list))
+            for r, up in enumerate(unplaced_list):
+                name_item = QTableWidgetItem(up.get("part_name", "Part"))
+                if up.get("priority") == "High":
+                    name_item.setText(f"⚡ {up.get('part_name')}")
+                    name_item.setForeground(QColor("#f59e0b"))
+
+                tbl_unplaced.setItem(r, 0, name_item)
+                tbl_unplaced.setItem(r, 1, QTableWidgetItem(f"{up.get('thickness', 18.0):.1f} mm"))
+                tbl_unplaced.setItem(r, 2, QTableWidgetItem(f"{up.get('priority', 'Normal')} (P{up.get('priority_order', 100)})"))
+                tbl_unplaced.setItem(r, 3, QTableWidgetItem(str(up.get("required_quantity", 1))))
+                tbl_unplaced.setItem(r, 4, QTableWidgetItem(str(up.get("unplaced_quantity", 1))))
+                
+                reason_item = QTableWidgetItem(up.get("reason", "Could not fit"))
+                reason_item.setForeground(QColor("#ff4d4d"))
+                tbl_unplaced.setItem(r, 5, reason_item)
+
+            upp_lay.addWidget(tbl_unplaced)
+
+        tabs.addTab(unplaced_page, f"Unplaced Parts ({total_unplaced})")
+
+        root.addWidget(tabs, 1)
+
+        # Close button
+        btn_close = QPushButton("Close Summary")
+        btn_close.setObjectName("btn_primary")
+        btn_close.clicked.connect(self.accept)
+        root.addWidget(btn_close)
 
 
 # ─────────────────────────────────────────────────────────
 #  BACKGROUND NESTING WORKER
 # ─────────────────────────────────────────────────────────
 class NestingWorker(QObject):
-    finished = pyqtSignal(object)  # (output_path, placements, unplaced_count)
+    finished = pyqtSignal(object)  # NestResult summary dict
     error = pyqtSignal(str)
 
     def __init__(
@@ -1554,10 +2027,11 @@ class NestingWorker(QObject):
         user_id,
         project_id,
         part_paths,
-        sheet_width,
-        sheet_height,
+        stock_sheets,
         spacing,
         allow_rotate,
+        nesting_mode,
+        continue_on_incomplete,
         output_dir=None,
     ):
         super().__init__()
@@ -1565,10 +2039,11 @@ class NestingWorker(QObject):
         self._user_id = user_id
         self._project_id = project_id
         self._part_paths = part_paths
-        self._sheet_width = sheet_width
-        self._sheet_height = sheet_height
+        self._stock_sheets = stock_sheets
         self._spacing = spacing
         self._allow_rotate = allow_rotate
+        self._nesting_mode = nesting_mode
+        self._continue_on_incomplete = continue_on_incomplete
         self._output_dir = output_dir
 
     def run(self):
@@ -1577,15 +2052,17 @@ class NestingWorker(QObject):
                 user_id=self._user_id,
                 project_id=self._project_id,
                 part_paths=self._part_paths,
-                sheet_width=self._sheet_width,
-                sheet_height=self._sheet_height,
+                stock_sheets=self._stock_sheets,
                 spacing=self._spacing,
                 allow_rotate=self._allow_rotate,
+                nesting_mode=self._nesting_mode,
+                continue_on_incomplete=self._continue_on_incomplete,
                 output_dir=self._output_dir,
             )
             self.finished.emit(result)
         except Exception as e:
             self.error.emit(str(e))
+
 
 
 # ─────────────────────────────────────────────────────────
@@ -2262,19 +2739,45 @@ class EditorPage(QWidget):
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
 
-        parts = dialog.selected_parts()
-        if not parts:
+        parts_data = dialog.get_selected_parts()
+        if not parts_data:
             QMessageBox.warning(self, "Nest Parts", "Select at least one DXF part to nest.")
             return
 
-        sheet_w, sheet_h = dialog.sheet_size()
-        self._nest_sheet_size = (sheet_w, sheet_h)
+        stock_data = dialog.get_stock_sheets()
+
+        # Build core objects from dialog data
+        from core.nesting import StockSheet, NestablePart
+
+        stock_sheets = []
+        for sd in stock_data:
+            stock_sheets.append(StockSheet(
+                name=sd["material"],
+                material=sd["material"],
+                width=sd["width"],
+                height=sd["height"],
+                thickness=sd["thickness"],
+                available_quantity=sd["available_quantity"],
+                unlimited_quantity=sd["unlimited_quantity"],
+            ))
+
+        nestable_parts = []
+        for pd in parts_data:
+            nestable_parts.append(NestablePart(
+                path=pd["path"],
+                name=pd["name"],
+                quantity=pd["quantity"],
+                thickness=pd["thickness"],
+                priority=pd["priority"],
+                priority_order=pd["priority_order"],
+            ))
+
+        total_qty = sum(p["quantity"] for p in parts_data)
         self.add_message(
             "AI",
-            f"⏳ Nesting {sum(q for _, q in parts)} part(s) onto "
-            f"{sheet_w:g}x{sheet_h:g}mm sheet...",
+            f"⏳ Nesting {total_qty} part(s) across {len(stock_sheets)} stock sheet type(s)...",
         )
-        self.viewport.show_loading("NESTING PARTS ON SHEET")
+        self.viewport.show_loading("NESTING PARTS ON STOCK SHEETS")
         self.btn_nest.setEnabled(False)
         self.btn_nest.setText("Nesting...")
 
@@ -2283,11 +2786,12 @@ class EditorPage(QWidget):
             pipeline=self.win.pipeline,
             user_id=self.win.user_id,
             project_id=self.project_id,
-            part_paths=parts,
-            sheet_width=sheet_w,
-            sheet_height=sheet_h,
-            spacing=dialog.spacing_mm(),
-            allow_rotate=dialog.rotation_allowed(),
+            part_paths=nestable_parts,
+            stock_sheets=stock_sheets,
+            spacing=dialog.get_spacing_mm(),
+            allow_rotate=dialog.get_allow_rotate(),
+            nesting_mode=dialog.get_nesting_mode(),
+            continue_on_incomplete=dialog.get_continue_on_incomplete(),
             output_dir=self._folder or None,
         )
         self._nest_worker.moveToThread(self._nest_thread)
@@ -2305,23 +2809,45 @@ class EditorPage(QWidget):
         self.btn_nest.setText("🧩 Nest Parts")
         self.viewport.hide_loading()
 
-        output_path, placements, unplaced_count = result
-        if not output_path or not os.path.exists(output_path):
-            self.add_message("AI", "❌ Nesting failed. No output file was generated.")
-            QMessageBox.critical(self, "Nest Parts", "Nesting failed. No output file was generated.")
+        # result is now a summary dict from nest_parts()
+        if not isinstance(result, dict):
+            self.add_message("AI", "❌ Nesting failed — unexpected result format.")
             return
 
-        from core.nesting import sheet_utilization
+        total_placed = result.get("total_parts_placed", 0)
+        total_unplaced = result.get("total_parts_unplaced", 0)
+        utilization = result.get("total_utilization", 0.0)
+        sheets_used = result.get("total_sheets_used", 0)
 
-        sheet_w, sheet_h = getattr(self, "_nest_sheet_size", (1200.0, 600.0))
-        utilization = sheet_utilization(placements, parts=[], sheet_width=sheet_w, sheet_height=sheet_h)
-        summary = f"Sheet utilization: {utilization:.1f}%"
-        if unplaced_count:
-            summary += f"\n⚠️ {unplaced_count} part(s) could not fit and were left out."
+        if total_placed == 0 and sheets_used == 0:
+            self.add_message("AI", "❌ Nesting failed. No parts could be placed on any sheet.")
+            QMessageBox.critical(self, "Nest Parts", "No parts could be placed. Check thickness compatibility and stock sheet sizes.")
+            return
 
-        self.viewport.display_file(os.path.abspath(output_path))
-        self.add_message("AI", f"✨ Nesting complete.\n{summary}")
-        QMessageBox.information(self, "Nest Parts", summary)
+        # Show first sheet in viewport
+        sheets_list = result.get("sheets", [])
+        if sheets_list:
+            first_path = sheets_list[0].get("dxf_path", "")
+            if first_path and os.path.exists(first_path):
+                self.viewport.display_file(os.path.abspath(first_path))
+
+        summary_msg = (
+            f"✨ Nesting complete!\n"
+            f"  Placed: {total_placed} parts on {sheets_used} sheet(s)\n"
+            f"  Material efficiency: {utilization:.1f}%"
+        )
+        if total_unplaced:
+            summary_msg += f"\n  ⚠️ {total_unplaced} part(s) could not be placed."
+
+        self.add_message("AI", summary_msg)
+
+        # Open NestingSummaryDialog for detailed review
+        dlg = NestingSummaryDialog(self, result)
+        dlg.exec()
+
+        # If user clicked "Display in Viewport" on a specific sheet
+        if dlg.selected_dxf_file and os.path.exists(dlg.selected_dxf_file):
+            self.viewport.display_file(os.path.abspath(dlg.selected_dxf_file))
 
     def _on_nesting_error(self, error_msg: str):
         self.btn_nest.setEnabled(True)
