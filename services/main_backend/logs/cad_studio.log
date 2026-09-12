@@ -1,0 +1,2 @@
+{"timestamp": "2026-09-09T14:26:37.719563+00:00", "level": "INFO", "category": "request", "message": "[DEV MODE] OTP Code for yassinahmed6109@gmail.com (registration): 670430", "module": "mail", "function": "send_otp_email", "line": 25}
+{"timestamp": "2026-09-09T14:26:39.575251+00:00", "level": "INFO", "category": "request", "message": "Successfully sent OTP email to yassinahmed6109@gmail.com", "module": "mail", "function": "send_otp_email", "line": 123}

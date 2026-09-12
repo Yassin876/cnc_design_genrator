@@ -1,0 +1,162 @@
+{
+  "output_dir": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\nesting_results",
+  "total_parts_required": 8,
+  "total_parts_placed": 8,
+  "total_parts_unplaced": 0,
+  "total_sheets_used": 1,
+  "total_utilization": 18.47,
+  "total_waste": 81.53,
+  "completed_priority_groups": 1,
+  "incomplete_priority_groups": 0,
+  "priority_completion": [
+    {
+      "priority_order": 100,
+      "required": 8,
+      "placed": 8,
+      "unplaced": 0,
+      "status": "Complete"
+    }
+  ],
+  "production_ready_sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_filename": "nested_sheet_001.dxf",
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "utilization": 18.47
+    }
+  ],
+  "stock_usage": [
+    {
+      "stock_id": "sheet_1",
+      "name": "Stock Sheet 1",
+      "material": "Aluminum 6061",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 3.0,
+      "available_quantity": 10,
+      "unlimited_quantity": true,
+      "used_quantity": 1,
+      "remaining_quantity": 999999,
+      "average_utilization": 18.47,
+      "average_waste": 81.53
+    }
+  ],
+  "unplaced_parts": [],
+  "sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_path": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\nesting_results\\nested_sheet_001.dxf",
+      "dxf_filename": "nested_sheet_001.dxf",
+      "stock_sheet_id": "sheet_1",
+      "stock_sheet_name": "Stock Sheet 1",
+      "material": "Aluminum 6061",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 3.0,
+      "utilization": 18.47,
+      "waste": 81.53,
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "has_mixed_priority": false,
+      "placed_parts": [
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\ee2335cb-159f-440f-ac90-5f516b765009_butterfly.dxf",
+          "part_name": "butterfly.dxf",
+          "part_id": "e572bebf",
+          "x": 2.5,
+          "y": 2.5,
+          "width": 203.9458050073047,
+          "height": 213.95762559205485,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\ee2335cb-159f-440f-ac90-5f516b765009_butterfly.dxf",
+          "part_name": "butterfly.dxf",
+          "part_id": "e572bebf",
+          "x": 206.45,
+          "y": 2.5,
+          "width": 203.9458050073047,
+          "height": 213.95762559205485,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\c96bd633-a3d7-4992-8abb-1a938064a539_chair_back_part_005320.dxf",
+          "part_name": "chair_back_part_005320.dxf",
+          "part_id": "2754758a",
+          "x": 400.61,
+          "y": 2.5,
+          "width": 99.52626328170038,
+          "height": 86.3963978611605,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\c96bd633-a3d7-4992-8abb-1a938064a539_chair_back_part_005320.dxf",
+          "part_name": "chair_back_part_005320.dxf",
+          "part_id": "2754758a",
+          "x": 505.14,
+          "y": 2.5,
+          "width": 99.52626328170038,
+          "height": 86.3963978611605,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\b387ec8a-9378-447f-816a-04fef5116fb0_base_chair_part_121406.dxf",
+          "part_name": "base_chair_part_121406.dxf",
+          "part_id": "18cf6534",
+          "x": 609.67,
+          "y": 2.5,
+          "width": 99.54967483183235,
+          "height": 82.26946771505163,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\b387ec8a-9378-447f-816a-04fef5116fb0_base_chair_part_121406.dxf",
+          "part_name": "base_chair_part_121406.dxf",
+          "part_id": "18cf6534",
+          "x": 714.22,
+          "y": 2.5,
+          "width": 99.54967483183235,
+          "height": 82.26946771505163,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\77bddc90-db74-4412-9f57-ce9d7a07bd42_side_chair_part_222821.dxf",
+          "part_name": "side_chair_part_222821.dxf",
+          "part_id": "d8ef294a",
+          "x": 818.77,
+          "y": 2.5,
+          "width": 99.53730442927092,
+          "height": 60.935837154489334,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        },
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\uploads\\77bddc90-db74-4412-9f57-ce9d7a07bd42_side_chair_part_222821.dxf",
+          "part_name": "side_chair_part_222821.dxf",
+          "part_id": "d8ef294a",
+          "x": 923.31,
+          "y": 2.5,
+          "width": 99.53730442927092,
+          "height": 60.935837154489334,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        }
+      ]
+    }
+  ]
+}

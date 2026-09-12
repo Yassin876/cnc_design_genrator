@@ -1,0 +1,13 @@
+# Ignore virtual environments
+venv/
+.venv/
+__pycache__/
+*.pyc
+
+# Ignore environment variable files containing secrets
+.env
+.env.local
+
+# Ignore output DXF/STL files
+outputs/
+temp/

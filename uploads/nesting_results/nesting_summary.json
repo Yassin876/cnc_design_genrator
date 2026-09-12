@@ -1,0 +1,78 @@
+{
+  "output_dir": "D:\\download\\cnc_design_genrator\\uploads\\nesting_results",
+  "total_parts_required": 1,
+  "total_parts_placed": 1,
+  "total_parts_unplaced": 0,
+  "total_sheets_used": 1,
+  "total_utilization": 6.06,
+  "total_waste": 93.94,
+  "completed_priority_groups": 1,
+  "incomplete_priority_groups": 0,
+  "priority_completion": [
+    {
+      "priority_order": 100,
+      "required": 1,
+      "placed": 1,
+      "unplaced": 0,
+      "status": "Complete"
+    }
+  ],
+  "production_ready_sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_filename": "nested_sheet_001.dxf",
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "utilization": 6.06
+    }
+  ],
+  "stock_usage": [
+    {
+      "stock_id": "4fa21b9b",
+      "name": "Default (1200x600x18.0mm)",
+      "material": "Default",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 18.0,
+      "available_quantity": 1,
+      "unlimited_quantity": true,
+      "used_quantity": 1,
+      "remaining_quantity": 999999,
+      "average_utilization": 6.06,
+      "average_waste": 93.94
+    }
+  ],
+  "unplaced_parts": [],
+  "sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_path": "D:\\download\\cnc_design_genrator\\uploads\\nesting_results\\nested_sheet_001.dxf",
+      "dxf_filename": "nested_sheet_001.dxf",
+      "stock_sheet_id": "4fa21b9b",
+      "stock_sheet_name": "Default (1200x600x18.0mm)",
+      "material": "Default",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 18.0,
+      "utilization": 6.06,
+      "waste": 93.94,
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "has_mixed_priority": false,
+      "placed_parts": [
+        {
+          "part": "D:\\download\\cnc_design_genrator\\services\\main_backend\\outputs\\butterfly_162519.dxf",
+          "part_name": "butterfly",
+          "part_id": "af559fad",
+          "x": 2.5,
+          "y": 2.5,
+          "width": 203.9458050073047,
+          "height": 213.95762559205485,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        }
+      ]
+    }
+  ]
+}
