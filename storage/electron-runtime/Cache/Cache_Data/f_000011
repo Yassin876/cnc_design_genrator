@@ -1,0 +1,290 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/dialogs/NewProjectDialog.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=593a340b"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=593a340b"; const useState = __vite__cjsImport3_react["useState"];
+import { X, Sparkles, Image as ImageIcon, Box, FileText, UploadCloud, ArrowRight, AlertCircle } from "/node_modules/.vite/deps/lucide-react.js?v=593a340b";
+import { useWorkspaceStore } from "/src/app/store/useWorkspaceStore.ts";
+import { useAuthStore } from "/src/app/store/useAuthStore.ts";
+import { projectsApiService } from "/src/services/api/projects.ts";
+export const NewProjectDialog = () => {
+  _s();
+  const { isNewProjectModalOpen, setNewProjectModalOpen, setViewMode, setImportModalOpen } = useWorkspaceStore();
+  const { user } = useAuthStore();
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState(null);
+  if (!isNewProjectModalOpen) return null;
+  const createProjectAndNavigate = async (name, projectType, navigateTo) => {
+    setIsCreating(true);
+    setCreateError(null);
+    try {
+      await projectsApiService.createProject({
+        name,
+        description: `New ${projectType} project created via Quick Start`,
+        type: projectType
+      });
+      setViewMode(navigateTo);
+      setNewProjectModalOpen(false);
+    } catch (err) {
+      setCreateError(err.message || "Failed to create project");
+    } finally {
+      setIsCreating(false);
+    }
+  };
+  const creationModes = [
+    {
+      id: "text_to_3d",
+      title: "Text Prompt → 3D Model",
+      desc: "Generate parametric 3D CAD mesh directly from industrial text prompts.",
+      icon: /* @__PURE__ */ jsxDEV(Sparkles, { className: "w-6 h-6 text-violet-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 62,
+        columnNumber: 11
+      }, this),
+      action: () => createProjectAndNavigate("New 3D AI Design", "3D", "workspace_3d")
+    },
+    {
+      id: "image_to_3d",
+      title: "Image → 3D CAD Model",
+      desc: "Convert 2D engineering sketches or photographs into extruded 3D solids.",
+      icon: /* @__PURE__ */ jsxDEV(ImageIcon, { className: "w-6 h-6 text-cyan-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 69,
+        columnNumber: 11
+      }, this),
+      action: () => createProjectAndNavigate("New 3D Image Design", "3D", "workspace_3d")
+    },
+    {
+      id: "model_ai_edit",
+      title: "3D Model AI Parametric Edit",
+      desc: "Load existing 3D mesh and perform AI-driven contextual feature modifications.",
+      icon: /* @__PURE__ */ jsxDEV(Box, { className: "w-6 h-6 text-emerald-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 76,
+        columnNumber: 11
+      }, this),
+      action: () => createProjectAndNavigate("New 3D Parametric Design", "3D", "workspace_3d")
+    },
+    {
+      id: "text_to_2d",
+      title: "Text Prompt → 2D Blueprint",
+      desc: "Synthesize standard 2D vector DXF blueprints with dimension lines.",
+      icon: /* @__PURE__ */ jsxDEV(FileText, { className: "w-6 h-6 text-amber-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 83,
+        columnNumber: 11
+      }, this),
+      action: () => createProjectAndNavigate("New 2D Blueprint", "2D", "workspace_2d")
+    },
+    {
+      id: "image_to_2d",
+      title: "Image / File → 2D Vector",
+      desc: "Vectorize raster images or CAD drawings into multi-layer DXF paths.",
+      icon: /* @__PURE__ */ jsxDEV(ImageIcon, { className: "w-6 h-6 text-pink-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 90,
+        columnNumber: 11
+      }, this),
+      action: () => createProjectAndNavigate("New 2D Vector Design", "2D", "workspace_2d")
+    },
+    {
+      id: "import_cad",
+      title: "Import Existing CAD Asset",
+      desc: "Import raw STEP, STL, OBJ, DXF files for inspection and CAM nesting.",
+      icon: /* @__PURE__ */ jsxDEV(UploadCloud, { className: "w-6 h-6 text-blue-400" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 97,
+        columnNumber: 11
+      }, this),
+      action: () => {
+        setNewProjectModalOpen(false);
+        setImportModalOpen(true);
+      }
+    }
+  ];
+  return /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none font-sans", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-cad-panel border border-cad-border w-full max-w-4xl rounded-2xl shadow-2xl overflow-hidden", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 border-b border-cad-border flex items-center justify-between bg-cad-panel", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-2 font-bold text-sm text-white", children: [
+        /* @__PURE__ */ jsxDEV(Sparkles, { className: "w-5 h-5 text-violet-400" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+          lineNumber: 112,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: "Create New CNC Project" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+          lineNumber: 113,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 111,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setNewProjectModalOpen(false),
+          className: "text-cad-textMuted hover:text-white p-1 rounded-lg hover:bg-cad-surface",
+          children: /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+            lineNumber: 119,
+            columnNumber: 13
+          }, this)
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+          lineNumber: 115,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+      lineNumber: 110,
+      columnNumber: 9
+    }, this),
+    createError && /* @__PURE__ */ jsxDEV("div", { className: "mx-6 mt-4 p-3 bg-rose-950/60 border border-rose-800 text-rose-300 rounded-xl text-xs flex items-center space-x-2 font-mono", children: [
+      /* @__PURE__ */ jsxDEV(AlertCircle, { className: "w-4 h-4 shrink-0" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 126,
+        columnNumber: 13
+      }, this),
+      /* @__PURE__ */ jsxDEV("span", { children: createError }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 127,
+        columnNumber: 13
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+      lineNumber: 125,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-6 grid grid-cols-2 gap-4 max-h-[70vh] overflow-y-auto", children: creationModes.map(
+      (mode) => /* @__PURE__ */ jsxDEV(
+        "div",
+        {
+          onClick: isCreating ? void 0 : mode.action,
+          className: `group bg-cad-surface hover:bg-cad-card border border-cad-border hover:border-violet-500 p-5 rounded-2xl cursor-pointer transition-all flex items-start space-x-4 shadow-sm ${isCreating ? "opacity-60 pointer-events-none" : ""}`,
+          children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "p-3 bg-cad-bg rounded-xl border border-cad-border group-hover:scale-110 transition-transform", children: mode.icon }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+              lineNumber: 139,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "flex-1 space-y-1", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between", children: [
+                /* @__PURE__ */ jsxDEV("h4", { className: "text-sm font-bold text-white group-hover:text-violet-300 transition-colors", children: mode.title }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+                  lineNumber: 145,
+                  columnNumber: 19
+                }, this),
+                /* @__PURE__ */ jsxDEV(ArrowRight, { className: "w-4 h-4 text-cad-textMuted opacity-0 group-hover:opacity-100 group-hover:translate-x-1 transition-all" }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+                  lineNumber: 148,
+                  columnNumber: 19
+                }, this)
+              ] }, void 0, true, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+                lineNumber: 144,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV("p", { className: "text-xs text-cad-textMuted leading-relaxed", children: mode.desc }, void 0, false, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+                lineNumber: 150,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+              lineNumber: 143,
+              columnNumber: 15
+            }, this)
+          ]
+        },
+        mode.id,
+        true,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+          lineNumber: 134,
+          columnNumber: 11
+        },
+        this
+      )
+    ) }, void 0, false, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+      lineNumber: 132,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 border-t border-cad-border bg-cad-panel flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxDEV("span", { className: "text-[11px] text-cad-textMuted font-mono", children: user ? `Signed in as ${user.email}` : "Not signed in" }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+        lineNumber: 160,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setNewProjectModalOpen(false),
+          className: "px-5 py-2 bg-cad-surface hover:bg-cad-card text-cad-textMuted text-xs font-bold rounded-xl",
+          children: "Cancel"
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+          lineNumber: 163,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+      lineNumber: 159,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+    lineNumber: 107,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx",
+    lineNumber: 106,
+    columnNumber: 5
+  }, this);
+};
+_s(NewProjectDialog, "ezMef0aPgad3e0WQyPY1wQvQv8M=", false, function() {
+  return [useWorkspaceStore, useAuthStore];
+});
+_c = NewProjectDialog;
+var _c;
+$RefreshReg$(_c, "NewProjectDialog");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/cnc_design_genrator/src/components/dialogs/NewProjectDialog.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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LFNBZ0VBLEtBakVGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0FrRUE7QUFFSjtBQUFFRixHQXBKV0Qsa0JBQTBCO0FBQUEsVUFDc0RILG1CQUMxRUMsWUFBWTtBQUFBO0FBQUEsS0FGbEJFO0FBQTBCLElBQUE4QjtBQUFBLGFBQUFBLElBQUEiLCJuYW1lcyI6WyJ1c2VTdGF0ZSIsIlgiLCJTcGFya2xlcyIsIkltYWdlIiwiSW1hZ2VJY29uIiwiQm94IiwiRmlsZVRleHQiLCJVcGxvYWRDbG91ZCIsIkFycm93UmlnaHQiLCJBbGVydENpcmNsZSIsInVzZVdvcmtzcGFjZVN0b3JlIiwidXNlQXV0aFN0b3JlIiwicHJvamVjdHNBcGlTZXJ2aWNlIiwiTmV3UHJvamVjdERpYWxvZyIsIl9zIiwiaXNOZXdQcm9qZWN0TW9kYWxPcGVuIiwic2V0TmV3UHJvamVjdE1vZGFsT3BlbiIsInNldFZpZXdNb2RlIiwic2V0SW1wb3J0TW9kYWxPcGVuIiwidXNlciIsImlzQ3JlYXRpbmciLCJzZXRJc0NyZWF0aW5nIiwiY3JlYXRlRXJyb3IiLCJzZXRDcmVhdGVFcnJvciIsImNyZWF0ZVByb2plY3RBbmROYXZpZ2F0ZSIsIm5hbWUiLCJwcm9qZWN0VHlwZSIsIm5hdmlnYXRlVG8iLCJjcmVhdGVQcm9qZWN0IiwiZGVzY3JpcHRpb24iLCJ0eXBlIiwiZXJyIiwibWVzc2FnZSIsImNyZWF0aW9uTW9kZXMiLCJpZCIsInRpdGxlIiwiZGVzYyIsImljb24iLCJhY3Rpb24iLCJtYXAiLCJtb2RlIiwidW5kZWZpbmVkIiwiZW1haWwiLCJfYyJdLCJpZ25vcmVMaXN0IjpbXSwic291cmNlcyI6WyJOZXdQcm9qZWN0RGlhbG9nLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBYLCBTcGFya2xlcywgSW1hZ2UgYXMgSW1hZ2VJY29uLCBCb3gsIEZpbGVUZXh0LCBVcGxvYWRDbG91ZCwgQXJyb3dSaWdodCwgQWxlcnRDaXJjbGUgfSBmcm9tICdsdWNpZGUtcmVhY3QnO1xuaW1wb3J0IHsgdXNlV29ya3NwYWNlU3RvcmUgfSBmcm9tICcuLi8uLi9hcHAvc3RvcmUvdXNlV29ya3NwYWNlU3RvcmUnO1xuaW1wb3J0IHsgdXNlQXV0aFN0b3JlIH0gZnJvbSAnLi4vLi4vYXBwL3N0b3JlL3VzZUF1dGhTdG9yZSc7XG5pbXBvcnQgeyBwcm9qZWN0c0FwaVNlcnZpY2UgfSBmcm9tICcuLi8uLi9zZXJ2aWNlcy9hcGkvcHJvamVjdHMnO1xuXG5leHBvcnQgY29uc3QgTmV3UHJvamVjdERpYWxvZzogUmVhY3QuRkMgPSAoKSA9PiB7XG4gIGNvbnN0IHsgaXNOZXdQcm9qZWN0TW9kYWxPcGVuLCBzZXROZXdQcm9qZWN0TW9kYWxPcGVuLCBzZXRWaWV3TW9kZSwgc2V0SW1wb3J0TW9kYWxPcGVuIH0gPSB1c2VXb3Jrc3BhY2VTdG9yZSgpO1xuICBjb25zdCB7IHVzZXIgfSA9IHVzZUF1dGhTdG9yZSgpO1xuXG4gIGNvbnN0IFtpc0NyZWF0aW5nLCBzZXRJc0NyZWF0aW5nXSA9IHVzZVN0YXRlKGZhbHNlKTtcbiAgY29uc3QgW2NyZWF0ZUVycm9yLCBzZXRDcmVhdGVFcnJvcl0gPSB1c2VTdGF0ZTxzdHJpbmcgfCBudWxsPihudWxsKTtcblxuICBpZiAoIWlzTmV3UHJvamVjdE1vZGFsT3BlbikgcmV0dXJuIG51bGw7XG5cbiAgY29uc3QgY3JlYXRlUHJvamVjdEFuZE5hdmlnYXRlID0gYXN5bmMgKFxuICAgIG5hbWU6IHN0cmluZyxcbiAgICBwcm9qZWN0VHlwZTogJzJEJyB8ICczRCcsXG4gICAgbmF2aWdhdGVUbzogJ3dvcmtzcGFjZV8yZCcgfCAnd29ya3NwYWNlXzNkJ1xuICApID0+IHtcbiAgICBzZXRJc0NyZWF0aW5nKHRydWUpO1xuICAgIHNldENyZWF0ZUVycm9yKG51bGwpO1xuICAgIHRyeSB7XG4gICAgICBhd2FpdCBwcm9qZWN0c0FwaVNlcnZpY2UuY3JlYXRlUHJvamVjdCh7XG4gICAgICAgIG5hbWUsXG4gICAgICAgIGRlc2NyaXB0aW9uOiBgTmV3ICR7cHJvamVjdFR5cGV9IHByb2plY3QgY3JlYXRlZCB2aWEgUXVpY2sgU3RhcnRgLFxuICAgICAgICB0eXBlOiBwcm9qZWN0VHlwZVxuICAgICAgfSk7XG4gICAgICBzZXRWaWV3TW9kZShuYXZpZ2F0ZVRvKTtcbiAgICAgIHNldE5ld1Byb2plY3RNb2RhbE9wZW4oZmFsc2UpO1xuICAgIH0gY2F0Y2ggKGVycjogYW55KSB7XG4gICAgICBzZXRDcmVhdGVFcnJvcihlcnIubWVzc2FnZSB8fCAnRmFpbGVkIHRvIGNyZWF0ZSBwcm9qZWN0Jyk7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldElzQ3JlYXRpbmcoZmFsc2UpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBjcmVhdGlvbk1vZGVzID0gW1xuICAgIHtcbiAgICAgIGlkOiAndGV4dF90b18zZCcsXG4gICAgICB0aXRsZTogJ1RleHQgUHJvbXB0IOKGkiAzRCBNb2RlbCcsXG4gICAgICBkZXNjOiAnR2VuZXJhdGUgcGFyYW1ldHJpYyAzRCBDQUQgbWVzaCBkaXJlY3RseSBmcm9tIGluZHVzdHJpYWwgdGV4dCBwcm9tcHRzLicsXG4gICAgICBpY29uOiA8U3BhcmtsZXMgY2xhc3NOYW1lPVwidy02IGgtNiB0ZXh0LXZpb2xldC00MDBcIiAvPixcbiAgICAgIGFjdGlvbjogKCkgPT4gY3JlYXRlUHJvamVjdEFuZE5hdmlnYXRlKCdOZXcgM0QgQUkgRGVzaWduJywgJzNEJywgJ3dvcmtzcGFjZV8zZCcpXG4gICAgfSxcbiAgICB7XG4gICAgICBpZDogJ2ltYWdlX3RvXzNkJyxcbiAgICAgIHRpdGxlOiAnSW1hZ2Ug4oaSIDNEIENBRCBNb2RlbCcsXG4gICAgICBkZXNjOiAnQ29udmVydCAyRCBlbmdpbmVlcmluZyBza2V0Y2hlcyBvciBwaG90b2dyYXBocyBpbnRvIGV4dHJ1ZGVkIDNEIHNvbGlkcy4nLFxuICAgICAgaWNvbjogPEltYWdlSWNvbiBjbGFzc05hbWU9XCJ3LTYgaC02IHRleHQtY3lhbi00MDBcIiAvPixcbiAgICAgIGFjdGlvbjogKCkgPT4gY3JlYXRlUHJvamVjdEFuZE5hdmlnYXRlKCdOZXcgM0QgSW1hZ2UgRGVzaWduJywgJzNEJywgJ3dvcmtzcGFjZV8zZCcpXG4gICAgfSxcbiAgICB7XG4gICAgICBpZDogJ21vZGVsX2FpX2VkaXQnLFxuICAgICAgdGl0bGU6ICczRCBNb2RlbCBBSSBQYXJhbWV0cmljIEVkaXQnLFxuICAgICAgZGVzYzogJ0xvYWQgZXhpc3RpbmcgM0QgbWVzaCBhbmQgcGVyZm9ybSBBSS1kcml2ZW4gY29udGV4dHVhbCBmZWF0dXJlIG1vZGlmaWNhdGlvbnMuJyxcbiAgICAgIGljb246IDxCb3ggY2xhc3NOYW1lPVwidy02IGgtNiB0ZXh0LWVtZXJhbGQtNDAwXCIgLz4sXG4gICAgICBhY3Rpb246ICgpID0+IGNyZWF0ZVByb2plY3RBbmROYXZpZ2F0ZSgnTmV3IDNEIFBhcmFtZXRyaWMgRGVzaWduJywgJzNEJywgJ3dvcmtzcGFjZV8zZCcpXG4gICAgfSxcbiAgICB7XG4gICAgICBpZDogJ3RleHRfdG9fMmQnLFxuICAgICAgdGl0bGU6ICdUZXh0IFByb21wdCDihpIgMkQgQmx1ZXByaW50JyxcbiAgICAgIGRlc2M6ICdTeW50aGVzaXplIHN0YW5kYXJkIDJEIHZlY3RvciBEWEYgYmx1ZXByaW50cyB3aXRoIGRpbWVuc2lvbiBsaW5lcy4nLFxuICAgICAgaWNvbjogPEZpbGVUZXh0IGNsYXNzTmFtZT1cInctNiBoLTYgdGV4dC1hbWJlci00MDBcIiAvPixcbiAgICAgIGFjdGlvbjogKCkgPT4gY3JlYXRlUHJvamVjdEFuZE5hdmlnYXRlKCdOZXcgMkQgQmx1ZXByaW50JywgJzJEJywgJ3dvcmtzcGFjZV8yZCcpXG4gICAgfSxcbiAgICB7XG4gICAgICBpZDogJ2ltYWdlX3RvXzJkJyxcbiAgICAgIHRpdGxlOiAnSW1hZ2UgLyBGaWxlIOKGkiAyRCBWZWN0b3InLFxuICAgICAgZGVzYzogJ1ZlY3Rvcml6ZSByYXN0ZXIgaW1hZ2VzIG9yIENBRCBkcmF3aW5ncyBpbnRvIG11bHRpLWxheWVyIERYRiBwYXRocy4nLFxuICAgICAgaWNvbjogPEltYWdlSWNvbiBjbGFzc05hbWU9XCJ3LTYgaC02IHRleHQtcGluay00MDBcIiAvPixcbiAgICAgIGFjdGlvbjogKCkgPT4gY3JlYXRlUHJvamVjdEFuZE5hdmlnYXRlKCdOZXcgMkQgVmVjdG9yIERlc2lnbicsICcyRCcsICd3b3Jrc3BhY2VfMmQnKVxuICAgIH0sXG4gICAge1xuICAgICAgaWQ6ICdpbXBvcnRfY2FkJyxcbiAgICAgIHRpdGxlOiAnSW1wb3J0IEV4aXN0aW5nIENBRCBBc3NldCcsXG4gICAgICBkZXNjOiAnSW1wb3J0IHJhdyBTVEVQLCBTVEwsIE9CSiwgRFhGIGZpbGVzIGZvciBpbnNwZWN0aW9uIGFuZCBDQU0gbmVzdGluZy4nLFxuICAgICAgaWNvbjogPFVwbG9hZENsb3VkIGNsYXNzTmFtZT1cInctNiBoLTYgdGV4dC1ibHVlLTQwMFwiIC8+LFxuICAgICAgYWN0aW9uOiAoKSA9PiB7XG4gICAgICAgIHNldE5ld1Byb2plY3RNb2RhbE9wZW4oZmFsc2UpO1xuICAgICAgICBzZXRJbXBvcnRNb2RhbE9wZW4odHJ1ZSk7XG4gICAgICB9XG4gICAgfVxuICBdO1xuXG4gIHJldHVybiAoXG4gICAgPGRpdiBjbGFzc05hbWU9XCJmaXhlZCBpbnNldC0wIHotNTAgYmctYmxhY2svODAgYmFja2Ryb3AtYmx1ci1tZCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBwLTQgc2VsZWN0LW5vbmUgZm9udC1zYW5zXCI+XG4gICAgICA8ZGl2IGNsYXNzTmFtZT1cImJnLWNhZC1wYW5lbCBib3JkZXIgYm9yZGVyLWNhZC1ib3JkZXIgdy1mdWxsIG1heC13LTR4bCByb3VuZGVkLTJ4bCBzaGFkb3ctMnhsIG92ZXJmbG93LWhpZGRlblwiPlxuXG4gICAgICAgIHsvKiBIZWFkZXIgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC00IGJvcmRlci1iIGJvcmRlci1jYWQtYm9yZGVyIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBiZy1jYWQtcGFuZWxcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMiBmb250LWJvbGQgdGV4dC1zbSB0ZXh0LXdoaXRlXCI+XG4gICAgICAgICAgICA8U3BhcmtsZXMgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LXZpb2xldC00MDBcIiAvPlxuICAgICAgICAgICAgPHNwYW4+Q3JlYXRlIE5ldyBDTkMgUHJvamVjdDwvc3Bhbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXROZXdQcm9qZWN0TW9kYWxPcGVuKGZhbHNlKX1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtY2FkLXRleHRNdXRlZCBob3Zlcjp0ZXh0LXdoaXRlIHAtMSByb3VuZGVkLWxnIGhvdmVyOmJnLWNhZC1zdXJmYWNlXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICA8WCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIEVycm9yIEJhbm5lciAqL31cbiAgICAgICAge2NyZWF0ZUVycm9yICYmIChcbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cIm14LTYgbXQtNCBwLTMgYmctcm9zZS05NTAvNjAgYm9yZGVyIGJvcmRlci1yb3NlLTgwMCB0ZXh0LXJvc2UtMzAwIHJvdW5kZWQteGwgdGV4dC14cyBmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTIgZm9udC1tb25vXCI+XG4gICAgICAgICAgICA8QWxlcnRDaXJjbGUgY2xhc3NOYW1lPVwidy00IGgtNCBzaHJpbmstMFwiIC8+XG4gICAgICAgICAgICA8c3Bhbj57Y3JlYXRlRXJyb3J9PC9zcGFuPlxuICAgICAgICAgIDwvZGl2PlxuICAgICAgICApfVxuXG4gICAgICAgIHsvKiBNb2RlcyBHcmlkICovfVxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtNiBncmlkIGdyaWQtY29scy0yIGdhcC00IG1heC1oLVs3MHZoXSBvdmVyZmxvdy15LWF1dG9cIj5cbiAgICAgICAgICB7Y3JlYXRpb25Nb2Rlcy5tYXAoKG1vZGUpID0+IChcbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAga2V5PXttb2RlLmlkfVxuICAgICAgICAgICAgICBvbkNsaWNrPXtpc0NyZWF0aW5nID8gdW5kZWZpbmVkIDogbW9kZS5hY3Rpb259XG4gICAgICAgICAgICAgIGNsYXNzTmFtZT17YGdyb3VwIGJnLWNhZC1zdXJmYWNlIGhvdmVyOmJnLWNhZC1jYXJkIGJvcmRlciBib3JkZXItY2FkLWJvcmRlciBob3Zlcjpib3JkZXItdmlvbGV0LTUwMCBwLTUgcm91bmRlZC0yeGwgY3Vyc29yLXBvaW50ZXIgdHJhbnNpdGlvbi1hbGwgZmxleCBpdGVtcy1zdGFydCBzcGFjZS14LTQgc2hhZG93LXNtICR7aXNDcmVhdGluZyA/ICdvcGFjaXR5LTYwIHBvaW50ZXItZXZlbnRzLW5vbmUnIDogJyd9YH1cbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMgYmctY2FkLWJnIHJvdW5kZWQteGwgYm9yZGVyIGJvcmRlci1jYWQtYm9yZGVyIGdyb3VwLWhvdmVyOnNjYWxlLTExMCB0cmFuc2l0aW9uLXRyYW5zZm9ybVwiPlxuICAgICAgICAgICAgICAgIHttb2RlLmljb259XG4gICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIHNwYWNlLXktMVwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgICAgICAgICA8aDQgY2xhc3NOYW1lPVwidGV4dC1zbSBmb250LWJvbGQgdGV4dC13aGl0ZSBncm91cC1ob3Zlcjp0ZXh0LXZpb2xldC0zMDAgdHJhbnNpdGlvbi1jb2xvcnNcIj5cbiAgICAgICAgICAgICAgICAgICAge21vZGUudGl0bGV9XG4gICAgICAgICAgICAgICAgICA8L2g0PlxuICAgICAgICAgICAgICAgICAgPEFycm93UmlnaHQgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWNhZC10ZXh0TXV0ZWQgb3BhY2l0eS0wIGdyb3VwLWhvdmVyOm9wYWNpdHktMTAwIGdyb3VwLWhvdmVyOnRyYW5zbGF0ZS14LTEgdHJhbnNpdGlvbi1hbGxcIiAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQteHMgdGV4dC1jYWQtdGV4dE11dGVkIGxlYWRpbmctcmVsYXhlZFwiPlxuICAgICAgICAgICAgICAgICAge21vZGUuZGVzY31cbiAgICAgICAgICAgICAgICA8L3A+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKSl9XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICAgIHsvKiBGb290ZXIgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC00IGJvcmRlci10IGJvcmRlci1jYWQtYm9yZGVyIGJnLWNhZC1wYW5lbCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW5cIj5cbiAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LVsxMXB4XSB0ZXh0LWNhZC10ZXh0TXV0ZWQgZm9udC1tb25vXCI+XG4gICAgICAgICAgICB7dXNlciA/IGBTaWduZWQgaW4gYXMgJHt1c2VyLmVtYWlsfWAgOiAnTm90IHNpZ25lZCBpbid9XG4gICAgICAgICAgPC9zcGFuPlxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldE5ld1Byb2plY3RNb2RhbE9wZW4oZmFsc2UpfVxuICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNSBweS0yIGJnLWNhZC1zdXJmYWNlIGhvdmVyOmJnLWNhZC1jYXJkIHRleHQtY2FkLXRleHRNdXRlZCB0ZXh0LXhzIGZvbnQtYm9sZCByb3VuZGVkLXhsXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICBDYW5jZWxcbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgIDwvZGl2PlxuICAgIDwvZGl2PlxuICApO1xufTtcbiJdLCJmaWxlIjoiRDovY25jX2Rlc2lnbl9nZW5yYXRvci9zcmMvY29tcG9uZW50cy9kaWFsb2dzL05ld1Byb2plY3REaWFsb2cudHN4In0=

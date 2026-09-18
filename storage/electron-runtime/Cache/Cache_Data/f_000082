@@ -1,0 +1,441 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/dialogs/AuthModal.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=593a340b"; const Fragment = __vite__cjsImport0_react_jsxDevRuntime["Fragment"]; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=593a340b"; const useState = __vite__cjsImport3_react["useState"];
+import { X, Lock, Mail, User as UserIcon, ShieldCheck, KeyRound, RefreshCw } from "/node_modules/.vite/deps/lucide-react.js?v=593a340b";
+import { useWorkspaceStore } from "/src/app/store/useWorkspaceStore.ts";
+import { useAuthStore } from "/src/app/store/useAuthStore.ts?t=1789571220613";
+import { authService } from "/src/services/auth/authService.ts?t=1789571220613";
+export const AuthModal = () => {
+  _s();
+  const { isAuthModalOpen, setAuthModalOpen } = useWorkspaceStore();
+  const { setUser } = useAuthStore();
+  const [mode, setMode] = useState("login");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [otp, setOtp] = useState("");
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState(null);
+  const [infoMessage, setInfoMessage] = useState(null);
+  if (!isAuthModalOpen) return null;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setIsLoading(true);
+    setError(null);
+    setInfoMessage(null);
+    try {
+      if (mode === "login") {
+        const u = await authService.login(email, password);
+        setUser(u);
+        setAuthModalOpen(false);
+      } else if (mode === "signup") {
+        const res = await authService.signup(name || email.split("@")[0], email, password);
+        setInfoMessage(res.message || "Verification code sent to your email.");
+        setMode("otp");
+      } else if (mode === "otp") {
+        const res = await authService.verifyOtp(email, otp, "registration");
+        if ("access_token" in res && res.access_token) {
+          setUser({
+            id: res.user.id,
+            name: res.user.name,
+            email: res.user.email,
+            token: res.access_token,
+            created_at: res.user.created_at
+          });
+          setAuthModalOpen(false);
+        }
+      }
+    } catch (err) {
+      if (err.code === "AUTH_UNVERIFIED_EMAIL") {
+        setInfoMessage("Your email is unverified. Verification code sent.");
+        setMode("otp");
+      } else {
+        setError(err.message || "Authentication failed");
+      }
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  const handleResendOtp = async () => {
+    setIsLoading(true);
+    setError(null);
+    try {
+      const res = await authService.resendOtp(email, "registration");
+      setInfoMessage(res.message);
+    } catch (err) {
+      setError(err.message || "Resend code failed");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+  return /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none font-sans", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-cad-panel border border-cad-border w-full max-w-md rounded-2xl shadow-2xl overflow-hidden", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 border-b border-cad-border flex items-center justify-between bg-cad-panel", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-2 font-bold text-sm text-white", children: [
+        /* @__PURE__ */ jsxDEV(Lock, { className: "w-5 h-5 text-violet-400" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 101,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: [
+          mode === "login" && "Engineer Sign In",
+          mode === "signup" && "Register CAD Account",
+          mode === "otp" && "Verify Email OTP Code"
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 102,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 100,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setAuthModalOpen(false),
+          className: "text-cad-textMuted hover:text-white p-1 rounded-lg hover:bg-cad-surface",
+          children: /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 112,
+            columnNumber: 13
+          }, this)
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 108,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+      lineNumber: 99,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("form", { onSubmit: handleSubmit, className: "p-6 space-y-4", children: [
+      error && /* @__PURE__ */ jsxDEV("div", { className: "p-3 bg-red-950/60 border border-red-800 text-red-300 rounded-xl text-xs font-mono", children: error }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 120,
+        columnNumber: 11
+      }, this),
+      infoMessage && /* @__PURE__ */ jsxDEV("div", { className: "p-3 bg-indigo-950/60 border border-indigo-800 text-indigo-300 rounded-xl text-xs font-mono", children: infoMessage }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 126,
+        columnNumber: 11
+      }, this),
+      mode === "signup" && /* @__PURE__ */ jsxDEV("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-mono text-cad-textMuted", children: "Full Name" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 133,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center bg-cad-surface border border-cad-border rounded-xl px-3 py-2 text-xs", children: [
+          /* @__PURE__ */ jsxDEV(UserIcon, { className: "w-4 h-4 text-cad-textMuted mr-2" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 135,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "input",
+            {
+              type: "text",
+              required: true,
+              placeholder: "John Doe",
+              value: name,
+              onChange: (e) => setName(e.target.value),
+              className: "bg-transparent text-white outline-none w-full"
+            },
+            void 0,
+            false,
+            {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 136,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 134,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 132,
+        columnNumber: 11
+      }, this),
+      (mode === "login" || mode === "signup") && /* @__PURE__ */ jsxDEV(Fragment, { children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "space-y-1.5", children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-mono text-cad-textMuted", children: "Email Address" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 151,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center bg-cad-surface border border-cad-border rounded-xl px-3 py-2 text-xs", children: [
+            /* @__PURE__ */ jsxDEV(Mail, { className: "w-4 h-4 text-cad-textMuted mr-2" }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 153,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "email",
+                required: true,
+                placeholder: "engineer@company.com",
+                value: email,
+                onChange: (e) => setEmail(e.target.value),
+                className: "bg-transparent text-white outline-none w-full"
+              },
+              void 0,
+              false,
+              {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+                lineNumber: 154,
+                columnNumber: 19
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 152,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 150,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "space-y-1.5", children: [
+          /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-mono text-cad-textMuted", children: "Password" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 166,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV("div", { className: "flex items-center bg-cad-surface border border-cad-border rounded-xl px-3 py-2 text-xs", children: [
+            /* @__PURE__ */ jsxDEV(KeyRound, { className: "w-4 h-4 text-cad-textMuted mr-2" }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 168,
+              columnNumber: 19
+            }, this),
+            /* @__PURE__ */ jsxDEV(
+              "input",
+              {
+                type: "password",
+                required: true,
+                placeholder: "••••••••",
+                value: password,
+                onChange: (e) => setPassword(e.target.value),
+                className: "bg-transparent text-white outline-none w-full"
+              },
+              void 0,
+              false,
+              {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+                lineNumber: 169,
+                columnNumber: 19
+              },
+              this
+            )
+          ] }, void 0, true, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 167,
+            columnNumber: 17
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 165,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 149,
+        columnNumber: 11
+      }, this),
+      mode === "otp" && /* @__PURE__ */ jsxDEV("div", { className: "space-y-1.5", children: [
+        /* @__PURE__ */ jsxDEV("label", { className: "text-xs font-mono text-cad-textMuted", children: [
+          "6-Digit Code for ",
+          email
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 184,
+          columnNumber: 15
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center bg-cad-surface border border-cad-border rounded-xl px-3 py-2 text-xs", children: [
+          /* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-4 h-4 text-violet-400 mr-2" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 186,
+            columnNumber: 17
+          }, this),
+          /* @__PURE__ */ jsxDEV(
+            "input",
+            {
+              type: "text",
+              required: true,
+              maxLength: 6,
+              placeholder: "123456",
+              value: otp,
+              onChange: (e) => setOtp(e.target.value.replace(/[^0-9]/g, "")),
+              className: "bg-transparent text-white text-center font-mono font-bold tracking-widest outline-none w-full"
+            },
+            void 0,
+            false,
+            {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 187,
+              columnNumber: 17
+            },
+            this
+          )
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 185,
+          columnNumber: 15
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 183,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "submit",
+          disabled: isLoading || mode === "otp" && otp.length !== 6,
+          className: "w-full py-2.5 bg-gradient-to-r from-violet-600 to-indigo-600 hover:from-violet-500 hover:to-indigo-500 text-white font-bold text-xs rounded-xl shadow-lg shadow-violet-600/30 flex items-center justify-center space-x-2 transition-all mt-2 disabled:opacity-50",
+          children: /* @__PURE__ */ jsxDEV("span", { children: isLoading ? "Processing..." : mode === "login" ? "Sign In to CAD Studio" : mode === "signup" ? "Create Account" : "Verify Code" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+            lineNumber: 205,
+            columnNumber: 13
+          }, this)
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 200,
+          columnNumber: 11
+        },
+        this
+      ),
+      mode === "otp" && /* @__PURE__ */ jsxDEV("div", { className: "text-center pt-1", children: /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          type: "button",
+          onClick: handleResendOtp,
+          disabled: isLoading,
+          className: "text-xs text-violet-400 font-bold hover:underline inline-flex items-center space-x-1",
+          children: [
+            /* @__PURE__ */ jsxDEV(RefreshCw, { className: "w-3 h-3" }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 218,
+              columnNumber: 17
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: "Resend Code" }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+              lineNumber: 219,
+              columnNumber: 17
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 212,
+          columnNumber: 15
+        },
+        this
+      ) }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 211,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV("div", { className: "pt-2 text-center text-xs text-cad-textMuted", children: mode === "login" ? /* @__PURE__ */ jsxDEV("span", { children: [
+        "Don't have an account? ",
+        /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: () => {
+          setMode("signup");
+          setError(null);
+        }, className: "text-violet-400 font-bold hover:underline", children: "Register Now" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 226,
+          columnNumber: 42
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 226,
+        columnNumber: 13
+      }, this) : /* @__PURE__ */ jsxDEV("span", { children: [
+        "Already registered? ",
+        /* @__PURE__ */ jsxDEV("button", { type: "button", onClick: () => {
+          setMode("login");
+          setError(null);
+        }, className: "text-violet-400 font-bold hover:underline", children: "Sign In" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+          lineNumber: 228,
+          columnNumber: 39
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 228,
+        columnNumber: 13
+      }, this) }, void 0, false, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+        lineNumber: 224,
+        columnNumber: 11
+      }, this)
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+      lineNumber: 117,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+    lineNumber: 96,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx",
+    lineNumber: 95,
+    columnNumber: 5
+  }, this);
+};
+_s(AuthModal, "8SdgBzd4PSj2+sNi5CtD+vhAtpI=", false, function() {
+  return [useWorkspaceStore, useAuthStore];
+});
+_c = AuthModal;
+var _c;
+$RefreshReg$(_c, "AuthModal");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/cnc_design_genrator/src/components/dialogs/AuthModal.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,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Qyw0QkFBbkk7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUErSTtBQUFBLFdBQTVLO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBcUwsSUFFckwsdUJBQUMsVUFBSztBQUFBO0FBQUEsUUFBb0IsdUJBQUMsWUFBTyxNQUFLLFVBQVMsU0FBUyxNQUFNO0FBQUVaLGtCQUFRLE9BQU87QUFBR1ksbUJBQVMsSUFBSTtBQUFBLFFBQUcsR0FBRyxXQUFVLDZDQUE0Qyx1QkFBbEk7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUF5STtBQUFBLFdBQW5LO0FBQUE7QUFBQTtBQUFBO0FBQUEsYUFBNEssS0FKaEw7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQU1BO0FBQUEsU0FqSEY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQW1IQTtBQUFBLE9BeElGO0FBQUE7QUFBQTtBQUFBO0FBQUEsU0EwSUEsS0EzSUY7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQTRJQTtBQUVKO0FBQUVqQixHQW5OV0QsV0FBbUI7QUFBQSxVQUNnQkgsbUJBQzFCQyxZQUFZO0FBQUE7QUFBQSxLQUZyQkU7QUFBbUIsSUFBQTRDO0FBQUEsYUFBQUEsSUFBQSIsIm5hbWVzIjpbInVzZVN0YXRlIiwiWCIsIkxvY2siLCJNYWlsIiwiVXNlciIsIlVzZXJJY29uIiwiU2hpZWxkQ2hlY2siLCJLZXlSb3VuZCIsIlJlZnJlc2hDdyIsInVzZVdvcmtzcGFjZVN0b3JlIiwidXNlQXV0aFN0b3JlIiwiYXV0aFNlcnZpY2UiLCJBdXRoTW9kYWwiLCJfcyIsImlzQXV0aE1vZGFsT3BlbiIsInNldEF1dGhNb2RhbE9wZW4iLCJzZXRVc2VyIiwibW9kZSIsInNldE1vZGUiLCJlbWFpbCIsInNldEVtYWlsIiwicGFzc3dvcmQiLCJzZXRQYXNzd29yZCIsIm5hbWUiLCJzZXROYW1lIiwib3RwIiwic2V0T3RwIiwiaXNMb2FkaW5nIiwic2V0SXNMb2FkaW5nIiwiZXJyb3IiLCJzZXRFcnJvciIsImluZm9NZXNzYWdlIiwic2V0SW5mb01lc3NhZ2UiLCJoYW5kbGVTdWJtaXQiLCJlIiwicHJldmVudERlZmF1bHQiLCJ1IiwibG9naW4iLCJyZXMiLCJzaWdudXAiLCJzcGxpdCIsIm1lc3NhZ2UiLCJ2ZXJpZnlPdHAiLCJhY2Nlc3NfdG9rZW4iLCJpZCIsInVzZXIiLCJ0b2tlbiIsImNyZWF0ZWRfYXQiLCJlcnIiLCJjb2RlIiwiaGFuZGxlUmVzZW5kT3RwIiwicmVzZW5kT3RwIiwidGFyZ2V0IiwidmFsdWUiLCJyZXBsYWNlIiwibGVuZ3RoIiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiQXV0aE1vZGFsLnRzeCJdLCJzb3VyY2VzQ29udGVudCI6WyJpbXBvcnQgUmVhY3QsIHsgdXNlU3RhdGUgfSBmcm9tICdyZWFjdCc7XG5pbXBvcnQgeyBYLCBMb2NrLCBNYWlsLCBVc2VyIGFzIFVzZXJJY29uLCBTaGllbGRDaGVjaywgS2V5Um91bmQsIFJlZnJlc2hDdyB9IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5pbXBvcnQgeyB1c2VXb3Jrc3BhY2VTdG9yZSB9IGZyb20gJy4uLy4uL2FwcC9zdG9yZS91c2VXb3Jrc3BhY2VTdG9yZSc7XG5pbXBvcnQgeyB1c2VBdXRoU3RvcmUgfSBmcm9tICcuLi8uLi9hcHAvc3RvcmUvdXNlQXV0aFN0b3JlJztcbmltcG9ydCB7IGF1dGhTZXJ2aWNlIH0gZnJvbSAnLi4vLi4vc2VydmljZXMvYXV0aC9hdXRoU2VydmljZSc7XG5cbmV4cG9ydCBjb25zdCBBdXRoTW9kYWw6IFJlYWN0LkZDID0gKCkgPT4ge1xuICBjb25zdCB7IGlzQXV0aE1vZGFsT3Blbiwgc2V0QXV0aE1vZGFsT3BlbiB9ID0gdXNlV29ya3NwYWNlU3RvcmUoKTtcbiAgY29uc3QgeyBzZXRVc2VyIH0gPSB1c2VBdXRoU3RvcmUoKTtcblxuICBjb25zdCBbbW9kZSwgc2V0TW9kZV0gPSB1c2VTdGF0ZTwnbG9naW4nIHwgJ3NpZ251cCcgfCAnb3RwJz4oJ2xvZ2luJyk7XG4gIGNvbnN0IFtlbWFpbCwgc2V0RW1haWxdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbcGFzc3dvcmQsIHNldFBhc3N3b3JkXSA9IHVzZVN0YXRlKCcnKTtcbiAgY29uc3QgW25hbWUsIHNldE5hbWVdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbb3RwLCBzZXRPdHBdID0gdXNlU3RhdGUoJycpO1xuICBjb25zdCBbaXNMb2FkaW5nLCBzZXRJc0xvYWRpbmddID0gdXNlU3RhdGUoZmFsc2UpO1xuICBjb25zdCBbZXJyb3IsIHNldEVycm9yXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xuICBjb25zdCBbaW5mb01lc3NhZ2UsIHNldEluZm9NZXNzYWdlXSA9IHVzZVN0YXRlPHN0cmluZyB8IG51bGw+KG51bGwpO1xuXG4gIGlmICghaXNBdXRoTW9kYWxPcGVuKSByZXR1cm4gbnVsbDtcblxuICBjb25zdCBoYW5kbGVTdWJtaXQgPSBhc3luYyAoZTogUmVhY3QuRm9ybUV2ZW50KSA9PiB7XG4gICAgZS5wcmV2ZW50RGVmYXVsdCgpO1xuICAgIHNldElzTG9hZGluZyh0cnVlKTtcbiAgICBzZXRFcnJvcihudWxsKTtcbiAgICBzZXRJbmZvTWVzc2FnZShudWxsKTtcblxuICAgIHRyeSB7XG4gICAgICBpZiAobW9kZSA9PT0gJ2xvZ2luJykge1xuICAgICAgICBjb25zdCB1ID0gYXdhaXQgYXV0aFNlcnZpY2UubG9naW4oZW1haWwsIHBhc3N3b3JkKTtcbiAgICAgICAgc2V0VXNlcih1KTtcbiAgICAgICAgc2V0QXV0aE1vZGFsT3BlbihmYWxzZSk7XG4gICAgICB9IGVsc2UgaWYgKG1vZGUgPT09ICdzaWdudXAnKSB7XG4gICAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IGF1dGhTZXJ2aWNlLnNpZ251cChuYW1lIHx8IGVtYWlsLnNwbGl0KCdAJylbMF0sIGVtYWlsLCBwYXNzd29yZCk7XG4gICAgICAgIHNldEluZm9NZXNzYWdlKHJlcy5tZXNzYWdlIHx8ICdWZXJpZmljYXRpb24gY29kZSBzZW50IHRvIHlvdXIgZW1haWwuJyk7XG4gICAgICAgIHNldE1vZGUoJ290cCcpO1xuICAgICAgfSBlbHNlIGlmIChtb2RlID09PSAnb3RwJykge1xuICAgICAgICBjb25zdCByZXMgPSBhd2FpdCBhdXRoU2VydmljZS52ZXJpZnlPdHAoZW1haWwsIG90cCwgJ3JlZ2lzdHJhdGlvbicpO1xuICAgICAgICBpZiAoJ2FjY2Vzc190b2tlbicgaW4gcmVzICYmIHJlcy5hY2Nlc3NfdG9rZW4pIHtcbiAgICAgICAgICBzZXRVc2VyKHtcbiAgICAgICAgICAgIGlkOiByZXMudXNlci5pZCxcbiAgICAgICAgICAgIG5hbWU6IHJlcy51c2VyLm5hbWUsXG4gICAgICAgICAgICBlbWFpbDogcmVzLnVzZXIuZW1haWwsXG4gICAgICAgICAgICB0b2tlbjogcmVzLmFjY2Vzc190b2tlbixcbiAgICAgICAgICAgIGNyZWF0ZWRfYXQ6IHJlcy51c2VyLmNyZWF0ZWRfYXRcbiAgICAgICAgICB9KTtcbiAgICAgICAgICBzZXRBdXRoTW9kYWxPcGVuKGZhbHNlKTtcbiAgICAgICAgfVxuICAgICAgfVxuICAgIH0gY2F0Y2ggKGVycjogYW55KSB7XG4gICAgICBpZiAoZXJyLmNvZGUgPT09ICdBVVRIX1VOVkVSSUZJRURfRU1BSUwnKSB7XG4gICAgICAgIHNldEluZm9NZXNzYWdlKCdZb3VyIGVtYWlsIGlzIHVudmVyaWZpZWQuIFZlcmlmaWNhdGlvbiBjb2RlIHNlbnQuJyk7XG4gICAgICAgIHNldE1vZGUoJ290cCcpO1xuICAgICAgfSBlbHNlIHtcbiAgICAgICAgc2V0RXJyb3IoZXJyLm1lc3NhZ2UgfHwgJ0F1dGhlbnRpY2F0aW9uIGZhaWxlZCcpO1xuICAgICAgfVxuICAgIH0gZmluYWxseSB7XG4gICAgICBzZXRJc0xvYWRpbmcoZmFsc2UpO1xuICAgIH1cbiAgfTtcblxuICBjb25zdCBoYW5kbGVSZXNlbmRPdHAgPSBhc3luYyAoKSA9PiB7XG4gICAgc2V0SXNMb2FkaW5nKHRydWUpO1xuICAgIHNldEVycm9yKG51bGwpO1xuICAgIHRyeSB7XG4gICAgICBjb25zdCByZXMgPSBhd2FpdCBhdXRoU2VydmljZS5yZXNlbmRPdHAoZW1haWwsICdyZWdpc3RyYXRpb24nKTtcbiAgICAgIHNldEluZm9NZXNzYWdlKHJlcy5tZXNzYWdlKTtcbiAgICB9IGNhdGNoIChlcnI6IGFueSkge1xuICAgICAgc2V0RXJyb3IoZXJyLm1lc3NhZ2UgfHwgJ1Jlc2VuZCBjb2RlIGZhaWxlZCcpO1xuICAgIH0gZmluYWxseSB7XG4gICAgICBzZXRJc0xvYWRpbmcoZmFsc2UpO1xuICAgIH1cbiAgfTtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwiZml4ZWQgaW5zZXQtMCB6LTUwIGJnLWJsYWNrLzgwIGJhY2tkcm9wLWJsdXItbWQgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcC00IHNlbGVjdC1ub25lIGZvbnQtc2Fuc1wiPlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy1jYWQtcGFuZWwgYm9yZGVyIGJvcmRlci1jYWQtYm9yZGVyIHctZnVsbCBtYXgtdy1tZCByb3VuZGVkLTJ4bCBzaGFkb3ctMnhsIG92ZXJmbG93LWhpZGRlblwiPlxuICAgICAgICBcbiAgICAgICAgey8qIEhlYWRlciAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTQgYm9yZGVyLWIgYm9yZGVyLWNhZC1ib3JkZXIgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuIGJnLWNhZC1wYW5lbFwiPlxuICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0yIGZvbnQtYm9sZCB0ZXh0LXNtIHRleHQtd2hpdGVcIj5cbiAgICAgICAgICAgIDxMb2NrIGNsYXNzTmFtZT1cInctNSBoLTUgdGV4dC12aW9sZXQtNDAwXCIgLz5cbiAgICAgICAgICAgIDxzcGFuPlxuICAgICAgICAgICAgICB7bW9kZSA9PT0gJ2xvZ2luJyAmJiAnRW5naW5lZXIgU2lnbiBJbid9XG4gICAgICAgICAgICAgIHttb2RlID09PSAnc2lnbnVwJyAmJiAnUmVnaXN0ZXIgQ0FEIEFjY291bnQnfVxuICAgICAgICAgICAgICB7bW9kZSA9PT0gJ290cCcgJiYgJ1ZlcmlmeSBFbWFpbCBPVFAgQ29kZSd9XG4gICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17KCkgPT4gc2V0QXV0aE1vZGFsT3BlbihmYWxzZSl9XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LWNhZC10ZXh0TXV0ZWQgaG92ZXI6dGV4dC13aGl0ZSBwLTEgcm91bmRlZC1sZyBob3ZlcjpiZy1jYWQtc3VyZmFjZVwiXG4gICAgICAgICAgPlxuICAgICAgICAgICAgPFggY2xhc3NOYW1lPVwidy00IGgtNFwiIC8+XG4gICAgICAgICAgPC9idXR0b24+XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICAgIHsvKiBGb3JtIEJvZHkgKi99XG4gICAgICAgIDxmb3JtIG9uU3VibWl0PXtoYW5kbGVTdWJtaXR9IGNsYXNzTmFtZT1cInAtNiBzcGFjZS15LTRcIj5cbiAgICAgICAgICBcbiAgICAgICAgICB7ZXJyb3IgJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTMgYmctcmVkLTk1MC82MCBib3JkZXIgYm9yZGVyLXJlZC04MDAgdGV4dC1yZWQtMzAwIHJvdW5kZWQteGwgdGV4dC14cyBmb250LW1vbm9cIj5cbiAgICAgICAgICAgICAge2Vycm9yfVxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKX1cblxuICAgICAgICAgIHtpbmZvTWVzc2FnZSAmJiAoXG4gICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtMyBiZy1pbmRpZ28tOTUwLzYwIGJvcmRlciBib3JkZXItaW5kaWdvLTgwMCB0ZXh0LWluZGlnby0zMDAgcm91bmRlZC14bCB0ZXh0LXhzIGZvbnQtbW9ub1wiPlxuICAgICAgICAgICAgICB7aW5mb01lc3NhZ2V9XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuXG4gICAgICAgICAge21vZGUgPT09ICdzaWdudXAnICYmIChcbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0xLjVcIj5cbiAgICAgICAgICAgICAgPGxhYmVsIGNsYXNzTmFtZT1cInRleHQteHMgZm9udC1tb25vIHRleHQtY2FkLXRleHRNdXRlZFwiPkZ1bGwgTmFtZTwvbGFiZWw+XG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgYmctY2FkLXN1cmZhY2UgYm9yZGVyIGJvcmRlci1jYWQtYm9yZGVyIHJvdW5kZWQteGwgcHgtMyBweS0yIHRleHQteHNcIj5cbiAgICAgICAgICAgICAgICA8VXNlckljb24gY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LWNhZC10ZXh0TXV0ZWQgbXItMlwiIC8+XG4gICAgICAgICAgICAgICAgPGlucHV0XG4gICAgICAgICAgICAgICAgICB0eXBlPVwidGV4dFwiXG4gICAgICAgICAgICAgICAgICByZXF1aXJlZFxuICAgICAgICAgICAgICAgICAgcGxhY2Vob2xkZXI9XCJKb2huIERvZVwiXG4gICAgICAgICAgICAgICAgICB2YWx1ZT17bmFtZX1cbiAgICAgICAgICAgICAgICAgIG9uQ2hhbmdlPXsoZSkgPT4gc2V0TmFtZShlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJiZy10cmFuc3BhcmVudCB0ZXh0LXdoaXRlIG91dGxpbmUtbm9uZSB3LWZ1bGxcIlxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKX1cblxuICAgICAgICAgIHsobW9kZSA9PT0gJ2xvZ2luJyB8fCBtb2RlID09PSAnc2lnbnVwJykgJiYgKFxuICAgICAgICAgICAgPD5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTEuNVwiPlxuICAgICAgICAgICAgICAgIDxsYWJlbCBjbGFzc05hbWU9XCJ0ZXh0LXhzIGZvbnQtbW9ubyB0ZXh0LWNhZC10ZXh0TXV0ZWRcIj5FbWFpbCBBZGRyZXNzPC9sYWJlbD5cbiAgICAgICAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIGJnLWNhZC1zdXJmYWNlIGJvcmRlciBib3JkZXItY2FkLWJvcmRlciByb3VuZGVkLXhsIHB4LTMgcHktMiB0ZXh0LXhzXCI+XG4gICAgICAgICAgICAgICAgICA8TWFpbCBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtY2FkLXRleHRNdXRlZCBtci0yXCIgLz5cbiAgICAgICAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICAgICAgICB0eXBlPVwiZW1haWxcIlxuICAgICAgICAgICAgICAgICAgICByZXF1aXJlZFxuICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cImVuZ2luZWVyQGNvbXBhbnkuY29tXCJcbiAgICAgICAgICAgICAgICAgICAgdmFsdWU9e2VtYWlsfVxuICAgICAgICAgICAgICAgICAgICBvbkNoYW5nZT17KGUpID0+IHNldEVtYWlsKGUudGFyZ2V0LnZhbHVlKX1cbiAgICAgICAgICAgICAgICAgICAgY2xhc3NOYW1lPVwiYmctdHJhbnNwYXJlbnQgdGV4dC13aGl0ZSBvdXRsaW5lLW5vbmUgdy1mdWxsXCJcbiAgICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwic3BhY2UteS0xLjVcIj5cbiAgICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwidGV4dC14cyBmb250LW1vbm8gdGV4dC1jYWQtdGV4dE11dGVkXCI+UGFzc3dvcmQ8L2xhYmVsPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgYmctY2FkLXN1cmZhY2UgYm9yZGVyIGJvcmRlci1jYWQtYm9yZGVyIHJvdW5kZWQteGwgcHgtMyBweS0yIHRleHQteHNcIj5cbiAgICAgICAgICAgICAgICAgIDxLZXlSb3VuZCBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtY2FkLXRleHRNdXRlZCBtci0yXCIgLz5cbiAgICAgICAgICAgICAgICAgIDxpbnB1dFxuICAgICAgICAgICAgICAgICAgICB0eXBlPVwicGFzc3dvcmRcIlxuICAgICAgICAgICAgICAgICAgICByZXF1aXJlZFxuICAgICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIuKAouKAouKAouKAouKAouKAouKAouKAolwiXG4gICAgICAgICAgICAgICAgICAgIHZhbHVlPXtwYXNzd29yZH1cbiAgICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRQYXNzd29yZChlLnRhcmdldC52YWx1ZSl9XG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJnLXRyYW5zcGFyZW50IHRleHQtd2hpdGUgb3V0bGluZS1ub25lIHctZnVsbFwiXG4gICAgICAgICAgICAgICAgICAvPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDwvPlxuICAgICAgICAgICl9XG5cbiAgICAgICAgICB7bW9kZSA9PT0gJ290cCcgJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJzcGFjZS15LTEuNVwiPlxuICAgICAgICAgICAgICA8bGFiZWwgY2xhc3NOYW1lPVwidGV4dC14cyBmb250LW1vbm8gdGV4dC1jYWQtdGV4dE11dGVkXCI+Ni1EaWdpdCBDb2RlIGZvciB7ZW1haWx9PC9sYWJlbD5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBiZy1jYWQtc3VyZmFjZSBib3JkZXIgYm9yZGVyLWNhZC1ib3JkZXIgcm91bmRlZC14bCBweC0zIHB5LTIgdGV4dC14c1wiPlxuICAgICAgICAgICAgICAgIDxTaGllbGRDaGVjayBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtdmlvbGV0LTQwMCBtci0yXCIgLz5cbiAgICAgICAgICAgICAgICA8aW5wdXRcbiAgICAgICAgICAgICAgICAgIHR5cGU9XCJ0ZXh0XCJcbiAgICAgICAgICAgICAgICAgIHJlcXVpcmVkXG4gICAgICAgICAgICAgICAgICBtYXhMZW5ndGg9ezZ9XG4gICAgICAgICAgICAgICAgICBwbGFjZWhvbGRlcj1cIjEyMzQ1NlwiXG4gICAgICAgICAgICAgICAgICB2YWx1ZT17b3RwfVxuICAgICAgICAgICAgICAgICAgb25DaGFuZ2U9eyhlKSA9PiBzZXRPdHAoZS50YXJnZXQudmFsdWUucmVwbGFjZSgvW14wLTldL2csICcnKSl9XG4gICAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJiZy10cmFuc3BhcmVudCB0ZXh0LXdoaXRlIHRleHQtY2VudGVyIGZvbnQtbW9ubyBmb250LWJvbGQgdHJhY2tpbmctd2lkZXN0IG91dGxpbmUtbm9uZSB3LWZ1bGxcIlxuICAgICAgICAgICAgICAgIC8+XG4gICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPC9kaXY+XG4gICAgICAgICAgKX1cblxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIHR5cGU9XCJzdWJtaXRcIlxuICAgICAgICAgICAgZGlzYWJsZWQ9e2lzTG9hZGluZyB8fCAobW9kZSA9PT0gJ290cCcgJiYgb3RwLmxlbmd0aCAhPT0gNil9XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJ3LWZ1bGwgcHktMi41IGJnLWdyYWRpZW50LXRvLXIgZnJvbS12aW9sZXQtNjAwIHRvLWluZGlnby02MDAgaG92ZXI6ZnJvbS12aW9sZXQtNTAwIGhvdmVyOnRvLWluZGlnby01MDAgdGV4dC13aGl0ZSBmb250LWJvbGQgdGV4dC14cyByb3VuZGVkLXhsIHNoYWRvdy1sZyBzaGFkb3ctdmlvbGV0LTYwMC8zMCBmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWNlbnRlciBzcGFjZS14LTIgdHJhbnNpdGlvbi1hbGwgbXQtMiBkaXNhYmxlZDpvcGFjaXR5LTUwXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICA8c3Bhbj5cbiAgICAgICAgICAgICAge2lzTG9hZGluZyA/ICdQcm9jZXNzaW5nLi4uJyA6IG1vZGUgPT09ICdsb2dpbicgPyAnU2lnbiBJbiB0byBDQUQgU3R1ZGlvJyA6IG1vZGUgPT09ICdzaWdudXAnID8gJ0NyZWF0ZSBBY2NvdW50JyA6ICdWZXJpZnkgQ29kZSd9XG4gICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgPC9idXR0b24+XG5cbiAgICAgICAgICB7bW9kZSA9PT0gJ290cCcgJiYgKFxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LWNlbnRlciBwdC0xXCI+XG4gICAgICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgICAgICB0eXBlPVwiYnV0dG9uXCJcbiAgICAgICAgICAgICAgICBvbkNsaWNrPXtoYW5kbGVSZXNlbmRPdHB9XG4gICAgICAgICAgICAgICAgZGlzYWJsZWQ9e2lzTG9hZGluZ31cbiAgICAgICAgICAgICAgICBjbGFzc05hbWU9XCJ0ZXh0LXhzIHRleHQtdmlvbGV0LTQwMCBmb250LWJvbGQgaG92ZXI6dW5kZXJsaW5lIGlubGluZS1mbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTFcIlxuICAgICAgICAgICAgICA+XG4gICAgICAgICAgICAgICAgPFJlZnJlc2hDdyBjbGFzc05hbWU9XCJ3LTMgaC0zXCIgLz5cbiAgICAgICAgICAgICAgICA8c3Bhbj5SZXNlbmQgQ29kZTwvc3Bhbj5cbiAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICApfVxuXG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwdC0yIHRleHQtY2VudGVyIHRleHQteHMgdGV4dC1jYWQtdGV4dE11dGVkXCI+XG4gICAgICAgICAgICB7bW9kZSA9PT0gJ2xvZ2luJyA/IChcbiAgICAgICAgICAgICAgPHNwYW4+RG9uJ3QgaGF2ZSBhbiBhY2NvdW50PyA8YnV0dG9uIHR5cGU9XCJidXR0b25cIiBvbkNsaWNrPXsoKSA9PiB7IHNldE1vZGUoJ3NpZ251cCcpOyBzZXRFcnJvcihudWxsKTsgfX0gY2xhc3NOYW1lPVwidGV4dC12aW9sZXQtNDAwIGZvbnQtYm9sZCBob3Zlcjp1bmRlcmxpbmVcIj5SZWdpc3RlciBOb3c8L2J1dHRvbj48L3NwYW4+XG4gICAgICAgICAgICApIDogKFxuICAgICAgICAgICAgICA8c3Bhbj5BbHJlYWR5IHJlZ2lzdGVyZWQ/IDxidXR0b24gdHlwZT1cImJ1dHRvblwiIG9uQ2xpY2s9eygpID0+IHsgc2V0TW9kZSgnbG9naW4nKTsgc2V0RXJyb3IobnVsbCk7IH19IGNsYXNzTmFtZT1cInRleHQtdmlvbGV0LTQwMCBmb250LWJvbGQgaG92ZXI6dW5kZXJsaW5lXCI+U2lnbiBJbjwvYnV0dG9uPjwvc3Bhbj5cbiAgICAgICAgICAgICl9XG4gICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgPC9mb3JtPlxuXG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6IkQ6L2NuY19kZXNpZ25fZ2VucmF0b3Ivc3JjL2NvbXBvbmVudHMvZGlhbG9ncy9BdXRoTW9kYWwudHN4In0=

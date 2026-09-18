@@ -1,0 +1,78 @@
+{
+  "output_dir": "storage/outputs/nesting_results",
+  "total_parts_required": 1,
+  "total_parts_placed": 1,
+  "total_parts_unplaced": 0,
+  "total_sheets_used": 1,
+  "total_utilization": 6.06,
+  "total_waste": 93.94,
+  "completed_priority_groups": 1,
+  "incomplete_priority_groups": 0,
+  "priority_completion": [
+    {
+      "priority_order": 100,
+      "required": 1,
+      "placed": 1,
+      "unplaced": 0,
+      "status": "Complete"
+    }
+  ],
+  "production_ready_sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_filename": "nested_sheet_001.dxf",
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "utilization": 6.06
+    }
+  ],
+  "stock_usage": [
+    {
+      "stock_id": "9c397564",
+      "name": "Stock Sheet 1",
+      "material": "Default",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 18.0,
+      "available_quantity": 10,
+      "unlimited_quantity": true,
+      "used_quantity": 1,
+      "remaining_quantity": 999999,
+      "average_utilization": 6.06,
+      "average_waste": 93.94
+    }
+  ],
+  "unplaced_parts": [],
+  "sheets": [
+    {
+      "sheet_number": 1,
+      "dxf_path": "storage/outputs/nesting_results/nested_sheet_001.dxf",
+      "dxf_filename": "nested_sheet_001.dxf",
+      "stock_sheet_id": "9c397564",
+      "stock_sheet_name": "Stock Sheet 1",
+      "material": "Default",
+      "width": 1200.0,
+      "height": 600.0,
+      "thickness": 18.0,
+      "utilization": 6.06,
+      "waste": 93.94,
+      "priority_order": 100,
+      "priority_level": "Normal",
+      "has_mixed_priority": false,
+      "placed_parts": [
+        {
+          "part": "storage/uploads/0253cdab-c64d-4ac0-9e97-7e2145c34aff_butterfly.dxf",
+          "part_name": "0253cdab-c64d-4ac0-9e97-7e2145c34aff_butterfly.dxf",
+          "part_id": "a3a980f5",
+          "x": 5.0,
+          "y": 5.0,
+          "width": 203.9458050073047,
+          "height": 213.95762559205485,
+          "rotation": 0,
+          "priority": "Normal",
+          "priority_order": 100
+        }
+      ]
+    }
+  ]
+}

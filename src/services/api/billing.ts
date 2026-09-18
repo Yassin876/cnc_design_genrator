@@ -23,6 +23,32 @@ export const billingApiService = {
   },
 
   /**
+   * Fetch Paddle public client configuration
+   */
+  getPaddleConfig: async () => {
+    const res = await apiClient.get('/billing/paddle/config');
+    return res.data;
+  },
+
+  /**
+   * Fetch authenticated user's Paddle subscription details
+   */
+  getPaddleSubscription: async () => {
+    const res = await apiClient.get('/billing/paddle/subscription');
+    return res.data;
+  },
+
+  /**
+   * Request a hosted Paddle checkout URL
+   */
+  createCheckoutSession: async (planId: string): Promise<{ checkout_url: string; price_id: string; plan_id: string }> => {
+    const res = await apiClient.post<{ checkout_url: string; price_id: string; plan_id: string }>('/billing/paddle/create-checkout', {
+      plan_id: planId,
+    });
+    return res.data;
+  },
+
+  /**
    * Fetch payment configuration, instructions, and placeholder parameters
    */
   getPaymentConfig: async (): Promise<PaymentConfig> => {

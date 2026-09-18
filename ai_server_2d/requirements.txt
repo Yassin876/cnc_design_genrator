@@ -1,0 +1,10 @@
+fastapi
+uvicorn
+opencv-python-headless
+google-genai
+httpx
+huggingface_hub
+Pillow
+requests
+pydantic
+python-dotenv

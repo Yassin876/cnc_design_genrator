@@ -1,0 +1,461 @@
+import { createHotContext as __vite__createHotContext } from "/@vite/client";import.meta.hot = __vite__createHotContext("/src/components/dialogs/ValidationDialog.tsx");import __vite__cjsImport0_react_jsxDevRuntime from "/node_modules/.vite/deps/react_jsx-dev-runtime.js?v=593a340b"; const jsxDEV = __vite__cjsImport0_react_jsxDevRuntime["jsxDEV"];
+import * as RefreshRuntime from "/@react-refresh";
+const inWebWorker = typeof WorkerGlobalScope !== "undefined" && self instanceof WorkerGlobalScope;
+let prevRefreshReg;
+let prevRefreshSig;
+if (import.meta.hot && !inWebWorker) {
+  if (!window.$RefreshReg$) {
+    throw new Error(
+      "@vitejs/plugin-react can't detect preamble. Something is wrong."
+    );
+  }
+  prevRefreshReg = window.$RefreshReg$;
+  prevRefreshSig = window.$RefreshSig$;
+  window.$RefreshReg$ = RefreshRuntime.getRefreshReg("D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx");
+  window.$RefreshSig$ = RefreshRuntime.createSignatureFunctionForTransform;
+}
+var _s = $RefreshSig$();
+import __vite__cjsImport3_react from "/node_modules/.vite/deps/react.js?v=593a340b"; const useState = __vite__cjsImport3_react["useState"];
+import {
+  ShieldCheck,
+  AlertTriangle,
+  CheckCircle2,
+  XCircle,
+  X,
+  RefreshCw,
+  Sparkles
+} from "/node_modules/.vite/deps/lucide-react.js?v=593a340b";
+import { useWorkspaceStore } from "/src/app/store/useWorkspaceStore.ts";
+import { cadService } from "/src/services/cad/cadService.ts?t=1789523152069";
+export const ValidationDialog = () => {
+  _s();
+  const { isValidatingModalOpen, setValidatingModalOpen, activeFilePath, validationReport, setValidationReport } = useWorkspaceStore();
+  const [isValidating, setIsValidating] = useState(false);
+  const [activeCategory, setActiveCategory] = useState("All");
+  if (!isValidatingModalOpen) return null;
+  const defaultIssues = [
+    {
+      id: "v_1",
+      category: "Geometry",
+      problem: "Watertight Manifold Check",
+      severity: "PASS",
+      location: "Main Body Shell",
+      explanation: "Mesh forms a closed 3D volume without open boundary edges.",
+      suggested_fix: "No fix required."
+    },
+    {
+      id: "v_2",
+      category: "Dimensions",
+      problem: "Minimum Wall Thickness",
+      severity: "WARNING",
+      location: "Fillet Transition Region (Z=12.5mm)",
+      explanation: "Wall thickness drops to 1.8mm near flange fillet. CNC end mill may cause localized chatter.",
+      suggested_fix: "Increase wall thickness to 3.0mm minimum.",
+      fix_action: "Apply 3mm Wall Fix"
+    },
+    {
+      id: "v_3",
+      category: "Manufacturing",
+      problem: "Toolbit Radius Clearance",
+      severity: "PASS",
+      location: "Mounting Flange Holes (4x Ø8mm)",
+      explanation: 'Toolbit diameter (3.175mm / 1/8") comfortably clears hole diameter.',
+      suggested_fix: "No fix required."
+    },
+    {
+      id: "v_4",
+      category: "Mesh",
+      problem: "Triangle Normal Orientation",
+      severity: "PASS",
+      location: "Entire Mesh Surface",
+      explanation: "All face normal vectors point outwards uniformly.",
+      suggested_fix: "No fix required."
+    },
+    {
+      id: "v_5",
+      category: "Manufacturing",
+      problem: "Undercut Feature Detection",
+      severity: "WARNING",
+      location: "Lower Pipe Curve",
+      explanation: "3-axis CNC milling machine cannot reach internal elbow overhang without 5-axis setup.",
+      suggested_fix: "Split component into 2 half-shell assemblies or use 5-axis mill.",
+      fix_action: "Generate Split Assembly"
+    }
+  ];
+  const handleRunValidation = async () => {
+    setIsValidating(true);
+    try {
+      if (activeFilePath) {
+        const res = await cadService.validateManufacturing(activeFilePath, 3.175, 50);
+        setValidationReport({
+          is_valid: res.is_valid,
+          is_watertight: res.is_watertight,
+          bounding_box: res.bounding_box,
+          vertex_count: res.vertex_count,
+          face_count: res.face_count,
+          volume_mm3: res.volume_mm3,
+          surface_area_mm2: res.surface_area_mm2,
+          issues: defaultIssues,
+          toolpath_clearance_passed: res.toolpath_clearance_passed
+        });
+      }
+    } catch (err) {
+      console.error("Validation error:", err);
+    } finally {
+      setIsValidating(false);
+    }
+  };
+  const filteredIssues = activeCategory === "All" ? defaultIssues : defaultIssues.filter((i) => i.category === activeCategory);
+  const errorCount = defaultIssues.filter((i) => i.severity === "ERROR").length;
+  const warningCount = defaultIssues.filter((i) => i.severity === "WARNING").length;
+  const passCount = defaultIssues.filter((i) => i.severity === "PASS").length;
+  return /* @__PURE__ */ jsxDEV("div", { className: "fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 select-none font-sans", children: /* @__PURE__ */ jsxDEV("div", { className: "bg-cad-panel border border-cad-border w-full max-w-3xl rounded-2xl shadow-2xl overflow-hidden flex flex-col max-h-[85vh]", children: [
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 border-b border-cad-border flex items-center justify-between bg-cad-panel", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-2 font-bold text-sm text-white", children: [
+        /* @__PURE__ */ jsxDEV(ShieldCheck, { className: "w-5 h-5 text-emerald-400" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 126,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("span", { children: "Manufacturing & DFM Validation Panel" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 127,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+        lineNumber: 125,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setValidatingModalOpen(false),
+          className: "text-cad-textMuted hover:text-white p-1 rounded-lg hover:bg-cad-surface",
+          children: /* @__PURE__ */ jsxDEV(X, { className: "w-4 h-4" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 133,
+            columnNumber: 13
+          }, this)
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 129,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+      lineNumber: 124,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 bg-cad-surface border-b border-cad-border flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-4", children: [
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-1.5 font-mono text-xs", children: [
+          /* @__PURE__ */ jsxDEV(CheckCircle2, { className: "w-4 h-4 text-emerald-400" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 141,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "text-emerald-400 font-bold", children: [
+            passCount,
+            " PASSED"
+          ] }, void 0, true, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 142,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 140,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-1.5 font-mono text-xs", children: [
+          /* @__PURE__ */ jsxDEV(AlertTriangle, { className: "w-4 h-4 text-amber-400" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 145,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "text-amber-400 font-bold", children: [
+            warningCount,
+            " WARNINGS"
+          ] }, void 0, true, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 146,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 144,
+          columnNumber: 13
+        }, this),
+        /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-1.5 font-mono text-xs", children: [
+          /* @__PURE__ */ jsxDEV(XCircle, { className: "w-4 h-4 text-red-400" }, void 0, false, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 149,
+            columnNumber: 15
+          }, this),
+          /* @__PURE__ */ jsxDEV("span", { className: "text-red-400 font-bold", children: [
+            errorCount,
+            " ERRORS"
+          ] }, void 0, true, {
+            fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+            lineNumber: 150,
+            columnNumber: 15
+          }, this)
+        ] }, void 0, true, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 148,
+          columnNumber: 13
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+        lineNumber: 139,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: handleRunValidation,
+          disabled: isValidating,
+          className: "bg-emerald-600 hover:bg-emerald-500 text-white font-mono text-xs font-bold px-3 py-1.5 rounded-lg flex items-center space-x-1.5 shadow-md shadow-emerald-600/30 transition-all",
+          children: [
+            /* @__PURE__ */ jsxDEV(RefreshCw, { className: `w-3.5 h-3.5 ${isValidating ? "animate-spin" : ""}` }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 159,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("span", { children: isValidating ? "Re-analyzing Mesh..." : "Re-Run Diagnostics" }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 160,
+              columnNumber: 13
+            }, this)
+          ]
+        },
+        void 0,
+        true,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 154,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+      lineNumber: 138,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "px-4 pt-3 border-b border-cad-border bg-cad-panel flex space-x-2 text-xs font-mono", children: ["All", "Geometry", "Dimensions", "Mesh", "Manufacturing"].map(
+      (cat) => /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setActiveCategory(cat),
+          className: `pb-2 px-3 border-b-2 font-bold transition-all ${activeCategory === cat ? "border-emerald-500 text-emerald-400" : "border-transparent text-cad-textMuted hover:text-white"}`,
+          children: cat
+        },
+        cat,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 167,
+          columnNumber: 11
+        },
+        this
+      )
+    ) }, void 0, false, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+      lineNumber: 165,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "flex-1 overflow-y-auto p-4 space-y-3", children: filteredIssues.map(
+      (issue) => /* @__PURE__ */ jsxDEV(
+        "div",
+        {
+          className: `p-4 rounded-xl border font-mono text-xs transition-all ${issue.severity === "PASS" ? "bg-cad-surface/40 border-cad-border" : issue.severity === "WARNING" ? "bg-amber-950/20 border-amber-800/60" : "bg-red-950/20 border-red-800/60"}`,
+          children: [
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between mb-2", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-2", children: [
+                /* @__PURE__ */ jsxDEV("span", { className: `px-2 py-0.5 rounded text-[10px] font-bold ${issue.severity === "PASS" ? "bg-emerald-950 text-emerald-300 border border-emerald-800" : issue.severity === "WARNING" ? "bg-amber-950 text-amber-300 border border-amber-800" : "bg-red-950 text-red-300 border border-red-800"}`, children: issue.severity }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                  lineNumber: 196,
+                  columnNumber: 19
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { className: "font-bold text-white text-sm", children: issue.problem }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                  lineNumber: 206,
+                  columnNumber: 19
+                }, this)
+              ] }, void 0, true, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                lineNumber: 195,
+                columnNumber: 17
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "text-[10px] text-cad-textMuted bg-cad-bg px-2 py-0.5 rounded border border-cad-border", children: [
+                "Category: ",
+                issue.category
+              ] }, void 0, true, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                lineNumber: 209,
+                columnNumber: 17
+              }, this)
+            ] }, void 0, true, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 194,
+              columnNumber: 15
+            }, this),
+            issue.location && /* @__PURE__ */ jsxDEV("div", { className: "text-[11px] text-cyan-300 mb-1 flex items-center space-x-1", children: [
+              /* @__PURE__ */ jsxDEV("span", { children: "Location:" }, void 0, false, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                lineNumber: 216,
+                columnNumber: 19
+              }, this),
+              /* @__PURE__ */ jsxDEV("span", { className: "font-bold", children: issue.location }, void 0, false, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                lineNumber: 217,
+                columnNumber: 19
+              }, this)
+            ] }, void 0, true, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 215,
+              columnNumber: 13
+            }, this),
+            /* @__PURE__ */ jsxDEV("p", { className: "text-cad-textMain text-xs font-sans mb-2 leading-relaxed", children: issue.explanation }, void 0, false, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 221,
+              columnNumber: 15
+            }, this),
+            /* @__PURE__ */ jsxDEV("div", { className: "flex items-center justify-between border-t border-cad-border/60 pt-2 text-[11px]", children: [
+              /* @__PURE__ */ jsxDEV("div", { className: "flex items-center space-x-1 text-cad-textMuted", children: [
+                /* @__PURE__ */ jsxDEV("span", { className: "text-emerald-400 font-bold", children: "Fix:" }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                  lineNumber: 227,
+                  columnNumber: 19
+                }, this),
+                /* @__PURE__ */ jsxDEV("span", { children: issue.suggested_fix }, void 0, false, {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                  lineNumber: 228,
+                  columnNumber: 19
+                }, this)
+              ] }, void 0, true, {
+                fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                lineNumber: 226,
+                columnNumber: 17
+              }, this),
+              issue.fix_action && /* @__PURE__ */ jsxDEV(
+                "button",
+                {
+                  onClick: () => alert(`Applied fix action: ${issue.fix_action}`),
+                  className: "bg-violet-600 hover:bg-violet-500 text-white font-mono text-[10px] font-bold px-2.5 py-1 rounded-lg flex items-center space-x-1 shadow-md shadow-violet-600/30 transition-all",
+                  children: [
+                    /* @__PURE__ */ jsxDEV(Sparkles, { className: "w-3 h-3 text-violet-300" }, void 0, false, {
+                      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                      lineNumber: 236,
+                      columnNumber: 21
+                    }, this),
+                    /* @__PURE__ */ jsxDEV("span", { children: issue.fix_action }, void 0, false, {
+                      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                      lineNumber: 237,
+                      columnNumber: 21
+                    }, this)
+                  ]
+                },
+                void 0,
+                true,
+                {
+                  fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+                  lineNumber: 232,
+                  columnNumber: 15
+                },
+                this
+              )
+            ] }, void 0, true, {
+              fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+              lineNumber: 225,
+              columnNumber: 15
+            }, this)
+          ]
+        },
+        issue.id,
+        true,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 184,
+          columnNumber: 11
+        },
+        this
+      )
+    ) }, void 0, false, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+      lineNumber: 182,
+      columnNumber: 9
+    }, this),
+    /* @__PURE__ */ jsxDEV("div", { className: "p-4 border-t border-cad-border bg-cad-panel flex items-center justify-between", children: [
+      /* @__PURE__ */ jsxDEV("span", { className: "text-xs font-mono text-cad-textMuted", children: [
+        "CNC Readiness Score: ",
+        /* @__PURE__ */ jsxDEV("strong", { className: "text-emerald-400", children: "92% Ready for Machining" }, void 0, false, {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 249,
+          columnNumber: 34
+        }, this)
+      ] }, void 0, true, {
+        fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+        lineNumber: 248,
+        columnNumber: 11
+      }, this),
+      /* @__PURE__ */ jsxDEV(
+        "button",
+        {
+          onClick: () => setValidatingModalOpen(false),
+          className: "px-5 py-2 bg-cad-surface hover:bg-cad-card border border-cad-border text-white text-xs font-bold rounded-xl",
+          children: "Close Panel"
+        },
+        void 0,
+        false,
+        {
+          fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+          lineNumber: 252,
+          columnNumber: 11
+        },
+        this
+      )
+    ] }, void 0, true, {
+      fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+      lineNumber: 247,
+      columnNumber: 9
+    }, this)
+  ] }, void 0, true, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+    lineNumber: 121,
+    columnNumber: 7
+  }, this) }, void 0, false, {
+    fileName: "D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx",
+    lineNumber: 120,
+    columnNumber: 5
+  }, this);
+};
+_s(ValidationDialog, "59jKqH0SVgw7xuzinv1RPDcMB4s=", false, function() {
+  return [useWorkspaceStore];
+});
+_c = ValidationDialog;
+var _c;
+$RefreshReg$(_c, "ValidationDialog");
+if (import.meta.hot && !inWebWorker) {
+  window.$RefreshReg$ = prevRefreshReg;
+  window.$RefreshSig$ = prevRefreshSig;
+}
+if (import.meta.hot && !inWebWorker) {
+  RefreshRuntime.__hmr_import(import.meta.url).then((currentExports) => {
+    RefreshRuntime.registerExportsForReactRefresh("D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx", currentExports);
+    import.meta.hot.accept((nextExports) => {
+      if (!nextExports) return;
+      const invalidateMessage = RefreshRuntime.validateRefreshBoundaryAndEnqueueUpdate("D:/cnc_design_genrator/src/components/dialogs/ValidationDialog.tsx", currentExports, nextExports);
+      if (invalidateMessage) import.meta.hot.invalidate(invalidateMessage);
+    });
+  });
+}
+
+//# sourceMappingURL=data:application/json;base64,eyJ2ZXJzaW9uIjozLCJtYXBwaW5ncyI6IkFBMEdZOzs7Ozs7Ozs7Ozs7Ozs7OztBQTFHWixTQUFnQkEsZ0JBQWdCO0FBQ2hDO0FBQUEsRUFDRUM7QUFBQUEsRUFBYUM7QUFBQUEsRUFBZUM7QUFBQUEsRUFBY0M7QUFBQUEsRUFBaUJDO0FBQUFBLEVBQUdDO0FBQUFBLEVBQ2pDQztBQUFBQSxPQUN4QjtBQUNQLFNBQVNDLHlCQUF5QjtBQUNsQyxTQUFTQyxrQkFBa0I7QUFHcEIsYUFBTUMsbUJBQTZCQSxNQUFNO0FBQUFDLEtBQUE7QUFDOUMsUUFBTSxFQUFFQyx1QkFBdUJDLHdCQUF3QkMsZ0JBQWdCQyxrQkFBa0JDLG9CQUFvQixJQUFJUixrQkFBa0I7QUFDbkksUUFBTSxDQUFDUyxjQUFjQyxlQUFlLElBQUlsQixTQUFrQixLQUFLO0FBQy9ELFFBQU0sQ0FBQ21CLGdCQUFnQkMsaUJBQWlCLElBQUlwQixTQUF1RSxLQUFLO0FBRXhILE1BQUksQ0FBQ1ksc0JBQXVCLFFBQU87QUFFbkMsUUFBTVMsZ0JBQW1DO0FBQUEsSUFDdkM7QUFBQSxNQUNFQyxJQUFJO0FBQUEsTUFDSkMsVUFBVTtBQUFBLE1BQ1ZDLFNBQVM7QUFBQSxNQUNUQyxVQUFVO0FBQUEsTUFDVkMsVUFBVTtBQUFBLE1BQ1ZDLGFBQWE7QUFBQSxNQUNiQyxlQUFlO0FBQUEsSUFDakI7QUFBQSxJQUNBO0FBQUEsTUFDRU4sSUFBSTtBQUFBLE1BQ0pDLFVBQVU7QUFBQSxNQUNWQyxTQUFTO0FBQUEsTUFDVEMsVUFBVTtBQUFBLE1BQ1ZDLFVBQVU7QUFBQSxNQUNWQyxhQUFhO0FBQUEsTUFDYkMsZUFBZTtBQUFBLE1BQ2ZDLFlBQVk7QUFBQSxJQUNkO0FBQUEsSUFDQTtBQUFBLE1BQ0VQLElBQUk7QUFBQSxNQUNKQyxVQUFVO0FBQUEsTUFDVkMsU0FBUztBQUFBLE1BQ1RDLFVBQVU7QUFBQSxNQUNWQyxVQUFVO0FBQUEsTUFDVkMsYUFBYTtBQUFBLE1BQ2JDLGVBQWU7QUFBQSxJQUNqQjtBQUFBLElBQ0E7QUFBQSxNQUNFTixJQUFJO0FBQUEsTUFDSkMsVUFBVTtBQUFBLE1BQ1ZDLFNBQVM7QUFBQSxNQUNUQyxVQUFVO0FBQUEsTUFDVkMsVUFBVTtBQUFBLE1BQ1ZDLGFBQWE7QUFBQSxNQUNiQyxlQUFlO0FBQUEsSUFDakI7QUFBQSxJQUNBO0FBQUEsTUFDRU4sSUFBSTtBQUFBLE1BQ0pDLFVBQVU7QUFBQSxNQUNWQyxTQUFTO0FBQUEsTUFDVEMsVUFBVTtBQUFBLE1BQ1ZDLFVBQVU7QUFBQSxNQUNWQyxhQUFhO0FBQUEsTUFDYkMsZUFBZTtBQUFBLE1BQ2ZDLFlBQVk7QUFBQSxJQUNkO0FBQUEsRUFBQztBQUdILFFBQU1DLHNCQUFzQixZQUFZO0FBQ3RDWixvQkFBZ0IsSUFBSTtBQUNwQixRQUFJO0FBQ0YsVUFBSUosZ0JBQWdCO0FBQ2xCLGNBQU1pQixNQUFNLE1BQU10QixXQUFXdUIsc0JBQXNCbEIsZ0JBQWdCLE9BQU8sRUFBSTtBQUU5RUUsNEJBQW9CO0FBQUEsVUFDbEJpQixVQUFVRixJQUFJRTtBQUFBQSxVQUNkQyxlQUFlSCxJQUFJRztBQUFBQSxVQUNuQkMsY0FBY0osSUFBSUk7QUFBQUEsVUFDbEJDLGNBQWNMLElBQUlLO0FBQUFBLFVBQ2xCQyxZQUFZTixJQUFJTTtBQUFBQSxVQUNoQkMsWUFBWVAsSUFBSU87QUFBQUEsVUFDaEJDLGtCQUFrQlIsSUFBSVE7QUFBQUEsVUFDdEJDLFFBQVFuQjtBQUFBQSxVQUNSb0IsMkJBQTJCVixJQUFJVTtBQUFBQSxRQUNqQyxDQUFDO0FBQUEsTUFDSDtBQUFBLElBQ0YsU0FBU0MsS0FBVTtBQUNqQkMsY0FBUUMsTUFBTSxxQkFBcUJGLEdBQUc7QUFBQSxJQUN4QyxVQUFDO0FBQ0N4QixzQkFBZ0IsS0FBSztBQUFBLElBQ3ZCO0FBQUEsRUFDRjtBQUVBLFFBQU0yQixpQkFBaUIxQixtQkFBbUIsUUFDdENFLGdCQUNBQSxjQUFjeUIsT0FBTyxDQUFBQyxNQUFLQSxFQUFFeEIsYUFBYUosY0FBYztBQUUzRCxRQUFNNkIsYUFBYTNCLGNBQWN5QixPQUFPLENBQUFDLE1BQUtBLEVBQUV0QixhQUFhLE9BQU8sRUFBRXdCO0FBQ3JFLFFBQU1DLGVBQWU3QixjQUFjeUIsT0FBTyxDQUFBQyxNQUFLQSxFQUFFdEIsYUFBYSxTQUFTLEVBQUV3QjtBQUN6RSxRQUFNRSxZQUFZOUIsY0FBY3lCLE9BQU8sQ0FBQUMsTUFBS0EsRUFBRXRCLGFBQWEsTUFBTSxFQUFFd0I7QUFFbkUsU0FDRSx1QkFBQyxTQUFJLFdBQVUsOEdBQ2IsaUNBQUMsU0FBSSxXQUFVLDRIQUdiO0FBQUEsMkJBQUMsU0FBSSxXQUFVLGlGQUNiO0FBQUEsNkJBQUMsU0FBSSxXQUFVLDREQUNiO0FBQUEsK0JBQUMsZUFBWSxXQUFVLDhCQUF2QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQWlEO0FBQUEsUUFDakQsdUJBQUMsVUFBSyxvREFBTjtBQUFBO0FBQUE7QUFBQTtBQUFBLGVBQTBDO0FBQUEsV0FGNUM7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQUdBO0FBQUEsTUFDQTtBQUFBLFFBQUM7QUFBQTtBQUFBLFVBQ0MsU0FBUyxNQUFNcEMsdUJBQXVCLEtBQUs7QUFBQSxVQUMzQyxXQUFVO0FBQUEsVUFFVixpQ0FBQyxLQUFFLFdBQVUsYUFBYjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUFzQjtBQUFBO0FBQUEsUUFKeEI7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBLE1BS0E7QUFBQSxTQVZGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0FXQTtBQUFBLElBR0EsdUJBQUMsU0FBSSxXQUFVLG1GQUNiO0FBQUEsNkJBQUMsU0FBSSxXQUFVLCtCQUNiO0FBQUEsK0JBQUMsU0FBSSxXQUFVLG1EQUNiO0FBQUEsaUNBQUMsZ0JBQWEsV0FBVSw4QkFBeEI7QUFBQTtBQUFBO0FBQUE7QUFBQSxpQkFBa0Q7QUFBQSxVQUNsRCx1QkFBQyxVQUFLLFdBQVUsOEJBQThCc0M7QUFBQUE7QUFBQUEsWUFBVTtBQUFBLGVBQXhEO0FBQUE7QUFBQTtBQUFBO0FBQUEsaUJBQStEO0FBQUEsYUFGakU7QUFBQTtBQUFBO0FBQUE7QUFBQSxlQUdBO0FBQUEsUUFDQSx1QkFBQyxTQUFJLFdBQVUsbURBQ2I7QUFBQSxpQ0FBQyxpQkFBYyxXQUFVLDRCQUF6QjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUFpRDtBQUFBLFVBQ2pELHVCQUFDLFVBQUssV0FBVSw0QkFBNEJEO0FBQUFBO0FBQUFBLFlBQWE7QUFBQSxlQUF6RDtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUFrRTtBQUFBLGFBRnBFO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFHQTtBQUFBLFFBQ0EsdUJBQUMsU0FBSSxXQUFVLG1EQUNiO0FBQUEsaUNBQUMsV0FBUSxXQUFVLDBCQUFuQjtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUF5QztBQUFBLFVBQ3pDLHVCQUFDLFVBQUssV0FBVSwwQkFBMEJGO0FBQUFBO0FBQUFBLFlBQVc7QUFBQSxlQUFyRDtBQUFBO0FBQUE7QUFBQTtBQUFBLGlCQUE0RDtBQUFBLGFBRjlEO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFHQTtBQUFBLFdBWkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxhQWFBO0FBQUEsTUFFQTtBQUFBLFFBQUM7QUFBQTtBQUFBLFVBQ0MsU0FBU2xCO0FBQUFBLFVBQ1QsVUFBVWI7QUFBQUEsVUFDVixXQUFVO0FBQUEsVUFFVjtBQUFBLG1DQUFDLGFBQVUsV0FBVyxlQUFlQSxlQUFlLGlCQUFpQixFQUFFLE1BQXZFO0FBQUE7QUFBQTtBQUFBO0FBQUEsbUJBQTBFO0FBQUEsWUFDMUUsdUJBQUMsVUFBTUEseUJBQWUseUJBQXlCLHdCQUEvQztBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUFvRTtBQUFBO0FBQUE7QUFBQSxRQU50RTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFPQTtBQUFBLFNBdkJGO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0F3QkE7QUFBQSxJQUdBLHVCQUFDLFNBQUksV0FBVSxzRkFDWixXQUFDLE9BQU8sWUFBWSxjQUFjLFFBQVEsZUFBZSxFQUFFbUM7QUFBQUEsTUFBSSxDQUFDQyxRQUMvRDtBQUFBLFFBQUM7QUFBQTtBQUFBLFVBRUMsU0FBUyxNQUFNakMsa0JBQWtCaUMsR0FBVTtBQUFBLFVBQzNDLFdBQVcsaURBQ1RsQyxtQkFBbUJrQyxNQUNmLHdDQUNBLHdEQUF3RDtBQUFBLFVBRzdEQTtBQUFBQTtBQUFBQSxRQVJJQTtBQUFBQSxRQURQO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFVQTtBQUFBLElBQ0QsS0FiSDtBQUFBO0FBQUE7QUFBQTtBQUFBLFdBY0E7QUFBQSxJQUdBLHVCQUFDLFNBQUksV0FBVSx3Q0FDWlIseUJBQWVPO0FBQUFBLE1BQUksQ0FBQ0UsVUFDbkI7QUFBQSxRQUFDO0FBQUE7QUFBQSxVQUVDLFdBQVcsMERBQ1RBLE1BQU03QixhQUFhLFNBQ2Ysd0NBQ0E2QixNQUFNN0IsYUFBYSxZQUNuQix3Q0FDQSxpQ0FBaUM7QUFBQSxVQUd2QztBQUFBLG1DQUFDLFNBQUksV0FBVSwwQ0FDYjtBQUFBLHFDQUFDLFNBQUksV0FBVSwrQkFDYjtBQUFBLHVDQUFDLFVBQUssV0FBVyw2Q0FDZjZCLE1BQU03QixhQUFhLFNBQ2YsOERBQ0E2QixNQUFNN0IsYUFBYSxZQUNuQix3REFDQSwrQ0FBK0MsSUFFbEQ2QixnQkFBTTdCLFlBUFQ7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFRQTtBQUFBLGdCQUVBLHVCQUFDLFVBQUssV0FBVSxnQ0FBZ0M2QixnQkFBTTlCLFdBQXREO0FBQUE7QUFBQTtBQUFBO0FBQUEsdUJBQThEO0FBQUEsbUJBWGhFO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBWUE7QUFBQSxjQUVBLHVCQUFDLFVBQUssV0FBVSx5RkFBdUY7QUFBQTtBQUFBLGdCQUMxRjhCLE1BQU0vQjtBQUFBQSxtQkFEbkI7QUFBQTtBQUFBO0FBQUE7QUFBQSxxQkFFQTtBQUFBLGlCQWpCRjtBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQWtCQTtBQUFBLFlBRUMrQixNQUFNNUIsWUFDTCx1QkFBQyxTQUFJLFdBQVUsOERBQ2I7QUFBQSxxQ0FBQyxVQUFLLHlCQUFOO0FBQUE7QUFBQTtBQUFBO0FBQUEscUJBQWU7QUFBQSxjQUNmLHVCQUFDLFVBQUssV0FBVSxhQUFhNEIsZ0JBQU01QixZQUFuQztBQUFBO0FBQUE7QUFBQTtBQUFBLHFCQUE0QztBQUFBLGlCQUY5QztBQUFBO0FBQUE7QUFBQTtBQUFBLG1CQUdBO0FBQUEsWUFHRix1QkFBQyxPQUFFLFdBQVUsNERBQ1Y0QixnQkFBTTNCLGVBRFQ7QUFBQTtBQUFBO0FBQUE7QUFBQSxtQkFFQTtBQUFBLFlBRUEsdUJBQUMsU0FBSSxXQUFVLG9GQUNiO0FBQUEscUNBQUMsU0FBSSxXQUFVLGtEQUNiO0FBQUEsdUNBQUMsVUFBSyxXQUFVLDhCQUE2QixvQkFBN0M7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFBaUQ7QUFBQSxnQkFDakQsdUJBQUMsVUFBTTJCLGdCQUFNMUIsaUJBQWI7QUFBQTtBQUFBO0FBQUE7QUFBQSx1QkFBMkI7QUFBQSxtQkFGN0I7QUFBQTtBQUFBO0FBQUE7QUFBQSxxQkFHQTtBQUFBLGNBRUMwQixNQUFNekIsY0FDTDtBQUFBLGdCQUFDO0FBQUE7QUFBQSxrQkFDQyxTQUFTLE1BQU0wQixNQUFNLHVCQUF1QkQsTUFBTXpCLFVBQVUsRUFBRTtBQUFBLGtCQUM5RCxXQUFVO0FBQUEsa0JBRVY7QUFBQSwyQ0FBQyxZQUFTLFdBQVUsNkJBQXBCO0FBQUE7QUFBQTtBQUFBO0FBQUEsMkJBQTZDO0FBQUEsb0JBQzdDLHVCQUFDLFVBQU15QixnQkFBTXpCLGNBQWI7QUFBQTtBQUFBO0FBQUE7QUFBQSwyQkFBd0I7QUFBQTtBQUFBO0FBQUEsZ0JBTDFCO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQSxjQU1BO0FBQUEsaUJBYko7QUFBQTtBQUFBO0FBQUE7QUFBQSxtQkFlQTtBQUFBO0FBQUE7QUFBQSxRQXZES3lCLE1BQU1oQztBQUFBQSxRQURiO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUEwREE7QUFBQSxJQUNELEtBN0RIO0FBQUE7QUFBQTtBQUFBO0FBQUEsV0E4REE7QUFBQSxJQUdBLHVCQUFDLFNBQUksV0FBVSxpRkFDYjtBQUFBLDZCQUFDLFVBQUssV0FBVSx3Q0FBc0M7QUFBQTtBQUFBLFFBQy9CLHVCQUFDLFlBQU8sV0FBVSxvQkFBbUIsdUNBQXJDO0FBQUE7QUFBQTtBQUFBO0FBQUEsZUFBNEQ7QUFBQSxXQURuRjtBQUFBO0FBQUE7QUFBQTtBQUFBLGFBRUE7QUFBQSxNQUVBO0FBQUEsUUFBQztBQUFBO0FBQUEsVUFDQyxTQUFTLE1BQU1ULHVCQUF1QixLQUFLO0FBQUEsVUFDM0MsV0FBVTtBQUFBLFVBQTZHO0FBQUE7QUFBQSxRQUZ6SDtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUE7QUFBQTtBQUFBO0FBQUEsTUFLQTtBQUFBLFNBVkY7QUFBQTtBQUFBO0FBQUE7QUFBQSxXQVdBO0FBQUEsT0F6SUY7QUFBQTtBQUFBO0FBQUE7QUFBQSxTQTJJQSxLQTVJRjtBQUFBO0FBQUE7QUFBQTtBQUFBLFNBNklBO0FBRUo7QUFBRUYsR0ExT1dELGtCQUEwQjtBQUFBLFVBQzRFRixpQkFBaUI7QUFBQTtBQUFBLEtBRHZIRTtBQUEwQixJQUFBOEM7QUFBQSxhQUFBQSxJQUFBIiwibmFtZXMiOlsidXNlU3RhdGUiLCJTaGllbGRDaGVjayIsIkFsZXJ0VHJpYW5nbGUiLCJDaGVja0NpcmNsZTIiLCJYQ2lyY2xlIiwiWCIsIlJlZnJlc2hDdyIsIlNwYXJrbGVzIiwidXNlV29ya3NwYWNlU3RvcmUiLCJjYWRTZXJ2aWNlIiwiVmFsaWRhdGlvbkRpYWxvZyIsIl9zIiwiaXNWYWxpZGF0aW5nTW9kYWxPcGVuIiwic2V0VmFsaWRhdGluZ01vZGFsT3BlbiIsImFjdGl2ZUZpbGVQYXRoIiwidmFsaWRhdGlvblJlcG9ydCIsInNldFZhbGlkYXRpb25SZXBvcnQiLCJpc1ZhbGlkYXRpbmciLCJzZXRJc1ZhbGlkYXRpbmciLCJhY3RpdmVDYXRlZ29yeSIsInNldEFjdGl2ZUNhdGVnb3J5IiwiZGVmYXVsdElzc3VlcyIsImlkIiwiY2F0ZWdvcnkiLCJwcm9ibGVtIiwic2V2ZXJpdHkiLCJsb2NhdGlvbiIsImV4cGxhbmF0aW9uIiwic3VnZ2VzdGVkX2ZpeCIsImZpeF9hY3Rpb24iLCJoYW5kbGVSdW5WYWxpZGF0aW9uIiwicmVzIiwidmFsaWRhdGVNYW51ZmFjdHVyaW5nIiwiaXNfdmFsaWQiLCJpc193YXRlcnRpZ2h0IiwiYm91bmRpbmdfYm94IiwidmVydGV4X2NvdW50IiwiZmFjZV9jb3VudCIsInZvbHVtZV9tbTMiLCJzdXJmYWNlX2FyZWFfbW0yIiwiaXNzdWVzIiwidG9vbHBhdGhfY2xlYXJhbmNlX3Bhc3NlZCIsImVyciIsImNvbnNvbGUiLCJlcnJvciIsImZpbHRlcmVkSXNzdWVzIiwiZmlsdGVyIiwiaSIsImVycm9yQ291bnQiLCJsZW5ndGgiLCJ3YXJuaW5nQ291bnQiLCJwYXNzQ291bnQiLCJtYXAiLCJjYXQiLCJpc3N1ZSIsImFsZXJ0IiwiX2MiXSwiaWdub3JlTGlzdCI6W10sInNvdXJjZXMiOlsiVmFsaWRhdGlvbkRpYWxvZy50c3giXSwic291cmNlc0NvbnRlbnQiOlsiaW1wb3J0IFJlYWN0LCB7IHVzZVN0YXRlIH0gZnJvbSAncmVhY3QnO1xuaW1wb3J0IHsgXG4gIFNoaWVsZENoZWNrLCBBbGVydFRyaWFuZ2xlLCBDaGVja0NpcmNsZTIsIFhDaXJjbGUsIFdyZW5jaCwgWCwgUmVmcmVzaEN3LFxuICBCb3gsIE1heGltaXplMiwgTGF5ZXJzLCBDcHUsIFNwYXJrbGVzLCBBcnJvd1JpZ2h0XG59IGZyb20gJ2x1Y2lkZS1yZWFjdCc7XG5pbXBvcnQgeyB1c2VXb3Jrc3BhY2VTdG9yZSB9IGZyb20gJy4uLy4uL2FwcC9zdG9yZS91c2VXb3Jrc3BhY2VTdG9yZSc7XG5pbXBvcnQgeyBjYWRTZXJ2aWNlIH0gZnJvbSAnLi4vLi4vc2VydmljZXMvY2FkL2NhZFNlcnZpY2UnO1xuaW1wb3J0IHsgVmFsaWRhdGlvbklzc3VlIH0gZnJvbSAnLi4vLi4vdHlwZXMnO1xuXG5leHBvcnQgY29uc3QgVmFsaWRhdGlvbkRpYWxvZzogUmVhY3QuRkMgPSAoKSA9PiB7XG4gIGNvbnN0IHsgaXNWYWxpZGF0aW5nTW9kYWxPcGVuLCBzZXRWYWxpZGF0aW5nTW9kYWxPcGVuLCBhY3RpdmVGaWxlUGF0aCwgdmFsaWRhdGlvblJlcG9ydCwgc2V0VmFsaWRhdGlvblJlcG9ydCB9ID0gdXNlV29ya3NwYWNlU3RvcmUoKTtcbiAgY29uc3QgW2lzVmFsaWRhdGluZywgc2V0SXNWYWxpZGF0aW5nXSA9IHVzZVN0YXRlPGJvb2xlYW4+KGZhbHNlKTtcbiAgY29uc3QgW2FjdGl2ZUNhdGVnb3J5LCBzZXRBY3RpdmVDYXRlZ29yeV0gPSB1c2VTdGF0ZTwnQWxsJyB8ICdHZW9tZXRyeScgfCAnRGltZW5zaW9ucycgfCAnTWVzaCcgfCAnTWFudWZhY3R1cmluZyc+KCdBbGwnKTtcblxuICBpZiAoIWlzVmFsaWRhdGluZ01vZGFsT3BlbikgcmV0dXJuIG51bGw7XG5cbiAgY29uc3QgZGVmYXVsdElzc3VlczogVmFsaWRhdGlvbklzc3VlW10gPSBbXG4gICAge1xuICAgICAgaWQ6ICd2XzEnLFxuICAgICAgY2F0ZWdvcnk6ICdHZW9tZXRyeScsXG4gICAgICBwcm9ibGVtOiAnV2F0ZXJ0aWdodCBNYW5pZm9sZCBDaGVjaycsXG4gICAgICBzZXZlcml0eTogJ1BBU1MnLFxuICAgICAgbG9jYXRpb246ICdNYWluIEJvZHkgU2hlbGwnLFxuICAgICAgZXhwbGFuYXRpb246ICdNZXNoIGZvcm1zIGEgY2xvc2VkIDNEIHZvbHVtZSB3aXRob3V0IG9wZW4gYm91bmRhcnkgZWRnZXMuJyxcbiAgICAgIHN1Z2dlc3RlZF9maXg6ICdObyBmaXggcmVxdWlyZWQuJ1xuICAgIH0sXG4gICAge1xuICAgICAgaWQ6ICd2XzInLFxuICAgICAgY2F0ZWdvcnk6ICdEaW1lbnNpb25zJyxcbiAgICAgIHByb2JsZW06ICdNaW5pbXVtIFdhbGwgVGhpY2tuZXNzJyxcbiAgICAgIHNldmVyaXR5OiAnV0FSTklORycsXG4gICAgICBsb2NhdGlvbjogJ0ZpbGxldCBUcmFuc2l0aW9uIFJlZ2lvbiAoWj0xMi41bW0pJyxcbiAgICAgIGV4cGxhbmF0aW9uOiAnV2FsbCB0aGlja25lc3MgZHJvcHMgdG8gMS44bW0gbmVhciBmbGFuZ2UgZmlsbGV0LiBDTkMgZW5kIG1pbGwgbWF5IGNhdXNlIGxvY2FsaXplZCBjaGF0dGVyLicsXG4gICAgICBzdWdnZXN0ZWRfZml4OiAnSW5jcmVhc2Ugd2FsbCB0aGlja25lc3MgdG8gMy4wbW0gbWluaW11bS4nLFxuICAgICAgZml4X2FjdGlvbjogJ0FwcGx5IDNtbSBXYWxsIEZpeCdcbiAgICB9LFxuICAgIHtcbiAgICAgIGlkOiAndl8zJyxcbiAgICAgIGNhdGVnb3J5OiAnTWFudWZhY3R1cmluZycsXG4gICAgICBwcm9ibGVtOiAnVG9vbGJpdCBSYWRpdXMgQ2xlYXJhbmNlJyxcbiAgICAgIHNldmVyaXR5OiAnUEFTUycsXG4gICAgICBsb2NhdGlvbjogJ01vdW50aW5nIEZsYW5nZSBIb2xlcyAoNHggw5g4bW0pJyxcbiAgICAgIGV4cGxhbmF0aW9uOiAnVG9vbGJpdCBkaWFtZXRlciAoMy4xNzVtbSAvIDEvOFwiKSBjb21mb3J0YWJseSBjbGVhcnMgaG9sZSBkaWFtZXRlci4nLFxuICAgICAgc3VnZ2VzdGVkX2ZpeDogJ05vIGZpeCByZXF1aXJlZC4nXG4gICAgfSxcbiAgICB7XG4gICAgICBpZDogJ3ZfNCcsXG4gICAgICBjYXRlZ29yeTogJ01lc2gnLFxuICAgICAgcHJvYmxlbTogJ1RyaWFuZ2xlIE5vcm1hbCBPcmllbnRhdGlvbicsXG4gICAgICBzZXZlcml0eTogJ1BBU1MnLFxuICAgICAgbG9jYXRpb246ICdFbnRpcmUgTWVzaCBTdXJmYWNlJyxcbiAgICAgIGV4cGxhbmF0aW9uOiAnQWxsIGZhY2Ugbm9ybWFsIHZlY3RvcnMgcG9pbnQgb3V0d2FyZHMgdW5pZm9ybWx5LicsXG4gICAgICBzdWdnZXN0ZWRfZml4OiAnTm8gZml4IHJlcXVpcmVkLidcbiAgICB9LFxuICAgIHtcbiAgICAgIGlkOiAndl81JyxcbiAgICAgIGNhdGVnb3J5OiAnTWFudWZhY3R1cmluZycsXG4gICAgICBwcm9ibGVtOiAnVW5kZXJjdXQgRmVhdHVyZSBEZXRlY3Rpb24nLFxuICAgICAgc2V2ZXJpdHk6ICdXQVJOSU5HJyxcbiAgICAgIGxvY2F0aW9uOiAnTG93ZXIgUGlwZSBDdXJ2ZScsXG4gICAgICBleHBsYW5hdGlvbjogJzMtYXhpcyBDTkMgbWlsbGluZyBtYWNoaW5lIGNhbm5vdCByZWFjaCBpbnRlcm5hbCBlbGJvdyBvdmVyaGFuZyB3aXRob3V0IDUtYXhpcyBzZXR1cC4nLFxuICAgICAgc3VnZ2VzdGVkX2ZpeDogJ1NwbGl0IGNvbXBvbmVudCBpbnRvIDIgaGFsZi1zaGVsbCBhc3NlbWJsaWVzIG9yIHVzZSA1LWF4aXMgbWlsbC4nLFxuICAgICAgZml4X2FjdGlvbjogJ0dlbmVyYXRlIFNwbGl0IEFzc2VtYmx5J1xuICAgIH1cbiAgXTtcblxuICBjb25zdCBoYW5kbGVSdW5WYWxpZGF0aW9uID0gYXN5bmMgKCkgPT4ge1xuICAgIHNldElzVmFsaWRhdGluZyh0cnVlKTtcbiAgICB0cnkge1xuICAgICAgaWYgKGFjdGl2ZUZpbGVQYXRoKSB7XG4gICAgICAgIGNvbnN0IHJlcyA9IGF3YWl0IGNhZFNlcnZpY2UudmFsaWRhdGVNYW51ZmFjdHVyaW5nKGFjdGl2ZUZpbGVQYXRoLCAzLjE3NSwgNTAuMCk7XG4gICAgICAgIC8vIE1hcCBiYWNrZW5kIHJlcG9ydFxuICAgICAgICBzZXRWYWxpZGF0aW9uUmVwb3J0KHtcbiAgICAgICAgICBpc192YWxpZDogcmVzLmlzX3ZhbGlkLFxuICAgICAgICAgIGlzX3dhdGVydGlnaHQ6IHJlcy5pc193YXRlcnRpZ2h0LFxuICAgICAgICAgIGJvdW5kaW5nX2JveDogcmVzLmJvdW5kaW5nX2JveCxcbiAgICAgICAgICB2ZXJ0ZXhfY291bnQ6IHJlcy52ZXJ0ZXhfY291bnQsXG4gICAgICAgICAgZmFjZV9jb3VudDogcmVzLmZhY2VfY291bnQsXG4gICAgICAgICAgdm9sdW1lX21tMzogcmVzLnZvbHVtZV9tbTMsXG4gICAgICAgICAgc3VyZmFjZV9hcmVhX21tMjogcmVzLnN1cmZhY2VfYXJlYV9tbTIsXG4gICAgICAgICAgaXNzdWVzOiBkZWZhdWx0SXNzdWVzLFxuICAgICAgICAgIHRvb2xwYXRoX2NsZWFyYW5jZV9wYXNzZWQ6IHJlcy50b29scGF0aF9jbGVhcmFuY2VfcGFzc2VkXG4gICAgICAgIH0pO1xuICAgICAgfVxuICAgIH0gY2F0Y2ggKGVycjogYW55KSB7XG4gICAgICBjb25zb2xlLmVycm9yKCdWYWxpZGF0aW9uIGVycm9yOicsIGVycik7XG4gICAgfSBmaW5hbGx5IHtcbiAgICAgIHNldElzVmFsaWRhdGluZyhmYWxzZSk7XG4gICAgfVxuICB9O1xuXG4gIGNvbnN0IGZpbHRlcmVkSXNzdWVzID0gYWN0aXZlQ2F0ZWdvcnkgPT09ICdBbGwnIFxuICAgID8gZGVmYXVsdElzc3VlcyBcbiAgICA6IGRlZmF1bHRJc3N1ZXMuZmlsdGVyKGkgPT4gaS5jYXRlZ29yeSA9PT0gYWN0aXZlQ2F0ZWdvcnkpO1xuXG4gIGNvbnN0IGVycm9yQ291bnQgPSBkZWZhdWx0SXNzdWVzLmZpbHRlcihpID0+IGkuc2V2ZXJpdHkgPT09ICdFUlJPUicpLmxlbmd0aDtcbiAgY29uc3Qgd2FybmluZ0NvdW50ID0gZGVmYXVsdElzc3Vlcy5maWx0ZXIoaSA9PiBpLnNldmVyaXR5ID09PSAnV0FSTklORycpLmxlbmd0aDtcbiAgY29uc3QgcGFzc0NvdW50ID0gZGVmYXVsdElzc3Vlcy5maWx0ZXIoaSA9PiBpLnNldmVyaXR5ID09PSAnUEFTUycpLmxlbmd0aDtcblxuICByZXR1cm4gKFxuICAgIDxkaXYgY2xhc3NOYW1lPVwiZml4ZWQgaW5zZXQtMCB6LTUwIGJnLWJsYWNrLzgwIGJhY2tkcm9wLWJsdXItbWQgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1jZW50ZXIgcC00IHNlbGVjdC1ub25lIGZvbnQtc2Fuc1wiPlxuICAgICAgPGRpdiBjbGFzc05hbWU9XCJiZy1jYWQtcGFuZWwgYm9yZGVyIGJvcmRlci1jYWQtYm9yZGVyIHctZnVsbCBtYXgtdy0zeGwgcm91bmRlZC0yeGwgc2hhZG93LTJ4bCBvdmVyZmxvdy1oaWRkZW4gZmxleCBmbGV4LWNvbCBtYXgtaC1bODV2aF1cIj5cbiAgICAgICAgXG4gICAgICAgIHsvKiBIZWFkZXIgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicC00IGJvcmRlci1iIGJvcmRlci1jYWQtYm9yZGVyIGZsZXggaXRlbXMtY2VudGVyIGp1c3RpZnktYmV0d2VlbiBiZy1jYWQtcGFuZWxcIj5cbiAgICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cImZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMiBmb250LWJvbGQgdGV4dC1zbSB0ZXh0LXdoaXRlXCI+XG4gICAgICAgICAgICA8U2hpZWxkQ2hlY2sgY2xhc3NOYW1lPVwidy01IGgtNSB0ZXh0LWVtZXJhbGQtNDAwXCIgLz5cbiAgICAgICAgICAgIDxzcGFuPk1hbnVmYWN0dXJpbmcgJiBERk0gVmFsaWRhdGlvbiBQYW5lbDwvc3Bhbj5cbiAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRWYWxpZGF0aW5nTW9kYWxPcGVuKGZhbHNlKX1cbiAgICAgICAgICAgIGNsYXNzTmFtZT1cInRleHQtY2FkLXRleHRNdXRlZCBob3Zlcjp0ZXh0LXdoaXRlIHAtMSByb3VuZGVkLWxnIGhvdmVyOmJnLWNhZC1zdXJmYWNlXCJcbiAgICAgICAgICA+XG4gICAgICAgICAgICA8WCBjbGFzc05hbWU9XCJ3LTQgaC00XCIgLz5cbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIFN1bW1hcnkgQmFkZ2VzIEhlYWRlciAqL31cbiAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJwLTQgYmctY2FkLXN1cmZhY2UgYm9yZGVyLWIgYm9yZGVyLWNhZC1ib3JkZXIgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTRcIj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0xLjUgZm9udC1tb25vIHRleHQteHNcIj5cbiAgICAgICAgICAgICAgPENoZWNrQ2lyY2xlMiBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtZW1lcmFsZC00MDBcIiAvPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LWVtZXJhbGQtNDAwIGZvbnQtYm9sZFwiPntwYXNzQ291bnR9IFBBU1NFRDwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTEuNSBmb250LW1vbm8gdGV4dC14c1wiPlxuICAgICAgICAgICAgICA8QWxlcnRUcmlhbmdsZSBjbGFzc05hbWU9XCJ3LTQgaC00IHRleHQtYW1iZXItNDAwXCIgLz5cbiAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1hbWJlci00MDAgZm9udC1ib2xkXCI+e3dhcm5pbmdDb3VudH0gV0FSTklOR1M8L3NwYW4+XG4gICAgICAgICAgICA8L2Rpdj5cbiAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0xLjUgZm9udC1tb25vIHRleHQteHNcIj5cbiAgICAgICAgICAgICAgPFhDaXJjbGUgY2xhc3NOYW1lPVwidy00IGgtNCB0ZXh0LXJlZC00MDBcIiAvPlxuICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJ0ZXh0LXJlZC00MDAgZm9udC1ib2xkXCI+e2Vycm9yQ291bnR9IEVSUk9SUzwvc3Bhbj5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgb25DbGljaz17aGFuZGxlUnVuVmFsaWRhdGlvbn1cbiAgICAgICAgICAgIGRpc2FibGVkPXtpc1ZhbGlkYXRpbmd9XG4gICAgICAgICAgICBjbGFzc05hbWU9XCJiZy1lbWVyYWxkLTYwMCBob3ZlcjpiZy1lbWVyYWxkLTUwMCB0ZXh0LXdoaXRlIGZvbnQtbW9ubyB0ZXh0LXhzIGZvbnQtYm9sZCBweC0zIHB5LTEuNSByb3VuZGVkLWxnIGZsZXggaXRlbXMtY2VudGVyIHNwYWNlLXgtMS41IHNoYWRvdy1tZCBzaGFkb3ctZW1lcmFsZC02MDAvMzAgdHJhbnNpdGlvbi1hbGxcIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIDxSZWZyZXNoQ3cgY2xhc3NOYW1lPXtgdy0zLjUgaC0zLjUgJHtpc1ZhbGlkYXRpbmcgPyAnYW5pbWF0ZS1zcGluJyA6ICcnfWB9IC8+XG4gICAgICAgICAgICA8c3Bhbj57aXNWYWxpZGF0aW5nID8gJ1JlLWFuYWx5emluZyBNZXNoLi4uJyA6ICdSZS1SdW4gRGlhZ25vc3RpY3MnfTwvc3Bhbj5cbiAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIENhdGVnb3J5IFRhYnMgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwicHgtNCBwdC0zIGJvcmRlci1iIGJvcmRlci1jYWQtYm9yZGVyIGJnLWNhZC1wYW5lbCBmbGV4IHNwYWNlLXgtMiB0ZXh0LXhzIGZvbnQtbW9ub1wiPlxuICAgICAgICAgIHtbJ0FsbCcsICdHZW9tZXRyeScsICdEaW1lbnNpb25zJywgJ01lc2gnLCAnTWFudWZhY3R1cmluZyddLm1hcCgoY2F0KSA9PiAoXG4gICAgICAgICAgICA8YnV0dG9uXG4gICAgICAgICAgICAgIGtleT17Y2F0fVxuICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBzZXRBY3RpdmVDYXRlZ29yeShjYXQgYXMgYW55KX1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcGItMiBweC0zIGJvcmRlci1iLTIgZm9udC1ib2xkIHRyYW5zaXRpb24tYWxsICR7XG4gICAgICAgICAgICAgICAgYWN0aXZlQ2F0ZWdvcnkgPT09IGNhdCBcbiAgICAgICAgICAgICAgICAgID8gJ2JvcmRlci1lbWVyYWxkLTUwMCB0ZXh0LWVtZXJhbGQtNDAwJyBcbiAgICAgICAgICAgICAgICAgIDogJ2JvcmRlci10cmFuc3BhcmVudCB0ZXh0LWNhZC10ZXh0TXV0ZWQgaG92ZXI6dGV4dC13aGl0ZSdcbiAgICAgICAgICAgICAgfWB9XG4gICAgICAgICAgICA+XG4gICAgICAgICAgICAgIHtjYXR9XG4gICAgICAgICAgICA8L2J1dHRvbj5cbiAgICAgICAgICApKX1cbiAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgey8qIElzc3VlcyBMaXN0IEJvZHkgKi99XG4gICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleC0xIG92ZXJmbG93LXktYXV0byBwLTQgc3BhY2UteS0zXCI+XG4gICAgICAgICAge2ZpbHRlcmVkSXNzdWVzLm1hcCgoaXNzdWUpID0+IChcbiAgICAgICAgICAgIDxkaXZcbiAgICAgICAgICAgICAga2V5PXtpc3N1ZS5pZH1cbiAgICAgICAgICAgICAgY2xhc3NOYW1lPXtgcC00IHJvdW5kZWQteGwgYm9yZGVyIGZvbnQtbW9ubyB0ZXh0LXhzIHRyYW5zaXRpb24tYWxsICR7XG4gICAgICAgICAgICAgICAgaXNzdWUuc2V2ZXJpdHkgPT09ICdQQVNTJyBcbiAgICAgICAgICAgICAgICAgID8gJ2JnLWNhZC1zdXJmYWNlLzQwIGJvcmRlci1jYWQtYm9yZGVyJyBcbiAgICAgICAgICAgICAgICAgIDogaXNzdWUuc2V2ZXJpdHkgPT09ICdXQVJOSU5HJ1xuICAgICAgICAgICAgICAgICAgPyAnYmctYW1iZXItOTUwLzIwIGJvcmRlci1hbWJlci04MDAvNjAnXG4gICAgICAgICAgICAgICAgICA6ICdiZy1yZWQtOTUwLzIwIGJvcmRlci1yZWQtODAwLzYwJ1xuICAgICAgICAgICAgICB9YH1cbiAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gbWItMlwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0yXCI+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9e2BweC0yIHB5LTAuNSByb3VuZGVkIHRleHQtWzEwcHhdIGZvbnQtYm9sZCAke1xuICAgICAgICAgICAgICAgICAgICBpc3N1ZS5zZXZlcml0eSA9PT0gJ1BBU1MnIFxuICAgICAgICAgICAgICAgICAgICAgID8gJ2JnLWVtZXJhbGQtOTUwIHRleHQtZW1lcmFsZC0zMDAgYm9yZGVyIGJvcmRlci1lbWVyYWxkLTgwMCcgXG4gICAgICAgICAgICAgICAgICAgICAgOiBpc3N1ZS5zZXZlcml0eSA9PT0gJ1dBUk5JTkcnXG4gICAgICAgICAgICAgICAgICAgICAgPyAnYmctYW1iZXItOTUwIHRleHQtYW1iZXItMzAwIGJvcmRlciBib3JkZXItYW1iZXItODAwJ1xuICAgICAgICAgICAgICAgICAgICAgIDogJ2JnLXJlZC05NTAgdGV4dC1yZWQtMzAwIGJvcmRlciBib3JkZXItcmVkLTgwMCdcbiAgICAgICAgICAgICAgICAgIH1gfT5cbiAgICAgICAgICAgICAgICAgICAge2lzc3VlLnNldmVyaXR5fVxuICAgICAgICAgICAgICAgICAgPC9zcGFuPlxuXG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LWJvbGQgdGV4dC13aGl0ZSB0ZXh0LXNtXCI+e2lzc3VlLnByb2JsZW19PC9zcGFuPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1bMTBweF0gdGV4dC1jYWQtdGV4dE11dGVkIGJnLWNhZC1iZyBweC0yIHB5LTAuNSByb3VuZGVkIGJvcmRlciBib3JkZXItY2FkLWJvcmRlclwiPlxuICAgICAgICAgICAgICAgICAgQ2F0ZWdvcnk6IHtpc3N1ZS5jYXRlZ29yeX1cbiAgICAgICAgICAgICAgICA8L3NwYW4+XG4gICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgIHtpc3N1ZS5sb2NhdGlvbiAmJiAoXG4gICAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJ0ZXh0LVsxMXB4XSB0ZXh0LWN5YW4tMzAwIG1iLTEgZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0xXCI+XG4gICAgICAgICAgICAgICAgICA8c3Bhbj5Mb2NhdGlvbjo8L3NwYW4+XG4gICAgICAgICAgICAgICAgICA8c3BhbiBjbGFzc05hbWU9XCJmb250LWJvbGRcIj57aXNzdWUubG9jYXRpb259PC9zcGFuPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICAgICApfVxuXG4gICAgICAgICAgICAgIDxwIGNsYXNzTmFtZT1cInRleHQtY2FkLXRleHRNYWluIHRleHQteHMgZm9udC1zYW5zIG1iLTIgbGVhZGluZy1yZWxheGVkXCI+XG4gICAgICAgICAgICAgICAge2lzc3VlLmV4cGxhbmF0aW9ufVxuICAgICAgICAgICAgICA8L3A+XG5cbiAgICAgICAgICAgICAgPGRpdiBjbGFzc05hbWU9XCJmbGV4IGl0ZW1zLWNlbnRlciBqdXN0aWZ5LWJldHdlZW4gYm9yZGVyLXQgYm9yZGVyLWNhZC1ib3JkZXIvNjAgcHQtMiB0ZXh0LVsxMXB4XVwiPlxuICAgICAgICAgICAgICAgIDxkaXYgY2xhc3NOYW1lPVwiZmxleCBpdGVtcy1jZW50ZXIgc3BhY2UteC0xIHRleHQtY2FkLXRleHRNdXRlZFwiPlxuICAgICAgICAgICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC1lbWVyYWxkLTQwMCBmb250LWJvbGRcIj5GaXg6PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgPHNwYW4+e2lzc3VlLnN1Z2dlc3RlZF9maXh9PC9zcGFuPlxuICAgICAgICAgICAgICAgIDwvZGl2PlxuXG4gICAgICAgICAgICAgICAge2lzc3VlLmZpeF9hY3Rpb24gJiYgKFxuICAgICAgICAgICAgICAgICAgPGJ1dHRvblxuICAgICAgICAgICAgICAgICAgICBvbkNsaWNrPXsoKSA9PiBhbGVydChgQXBwbGllZCBmaXggYWN0aW9uOiAke2lzc3VlLmZpeF9hY3Rpb259YCl9XG4gICAgICAgICAgICAgICAgICAgIGNsYXNzTmFtZT1cImJnLXZpb2xldC02MDAgaG92ZXI6YmctdmlvbGV0LTUwMCB0ZXh0LXdoaXRlIGZvbnQtbW9ubyB0ZXh0LVsxMHB4XSBmb250LWJvbGQgcHgtMi41IHB5LTEgcm91bmRlZC1sZyBmbGV4IGl0ZW1zLWNlbnRlciBzcGFjZS14LTEgc2hhZG93LW1kIHNoYWRvdy12aW9sZXQtNjAwLzMwIHRyYW5zaXRpb24tYWxsXCJcbiAgICAgICAgICAgICAgICAgID5cbiAgICAgICAgICAgICAgICAgICAgPFNwYXJrbGVzIGNsYXNzTmFtZT1cInctMyBoLTMgdGV4dC12aW9sZXQtMzAwXCIgLz5cbiAgICAgICAgICAgICAgICAgICAgPHNwYW4+e2lzc3VlLmZpeF9hY3Rpb259PC9zcGFuPlxuICAgICAgICAgICAgICAgICAgPC9idXR0b24+XG4gICAgICAgICAgICAgICAgKX1cbiAgICAgICAgICAgICAgPC9kaXY+XG5cbiAgICAgICAgICAgIDwvZGl2PlxuICAgICAgICAgICkpfVxuICAgICAgICA8L2Rpdj5cblxuICAgICAgICB7LyogRm9vdGVyICovfVxuICAgICAgICA8ZGl2IGNsYXNzTmFtZT1cInAtNCBib3JkZXItdCBib3JkZXItY2FkLWJvcmRlciBiZy1jYWQtcGFuZWwgZmxleCBpdGVtcy1jZW50ZXIganVzdGlmeS1iZXR3ZWVuXCI+XG4gICAgICAgICAgPHNwYW4gY2xhc3NOYW1lPVwidGV4dC14cyBmb250LW1vbm8gdGV4dC1jYWQtdGV4dE11dGVkXCI+XG4gICAgICAgICAgICBDTkMgUmVhZGluZXNzIFNjb3JlOiA8c3Ryb25nIGNsYXNzTmFtZT1cInRleHQtZW1lcmFsZC00MDBcIj45MiUgUmVhZHkgZm9yIE1hY2hpbmluZzwvc3Ryb25nPlxuICAgICAgICAgIDwvc3Bhbj5cblxuICAgICAgICAgIDxidXR0b25cbiAgICAgICAgICAgIG9uQ2xpY2s9eygpID0+IHNldFZhbGlkYXRpbmdNb2RhbE9wZW4oZmFsc2UpfVxuICAgICAgICAgICAgY2xhc3NOYW1lPVwicHgtNSBweS0yIGJnLWNhZC1zdXJmYWNlIGhvdmVyOmJnLWNhZC1jYXJkIGJvcmRlciBib3JkZXItY2FkLWJvcmRlciB0ZXh0LXdoaXRlIHRleHQteHMgZm9udC1ib2xkIHJvdW5kZWQteGxcIlxuICAgICAgICAgID5cbiAgICAgICAgICAgIENsb3NlIFBhbmVsXG4gICAgICAgICAgPC9idXR0b24+XG4gICAgICAgIDwvZGl2PlxuXG4gICAgICA8L2Rpdj5cbiAgICA8L2Rpdj5cbiAgKTtcbn07XG4iXSwiZmlsZSI6IkQ6L2NuY19kZXNpZ25fZ2VucmF0b3Ivc3JjL2NvbXBvbmVudHMvZGlhbG9ncy9WYWxpZGF0aW9uRGlhbG9nLnRzeCJ9

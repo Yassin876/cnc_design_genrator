@@ -1,0 +1,8 @@
+fastapi
+uvicorn
+ezdxf
+numpy
+google-genai
+requests
+pydantic
+python-dotenv

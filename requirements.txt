@@ -1,21 +1,40 @@
-# ─── Core UI ───────────────────────────────────────────────
+# ─── Web Backend & API ───────────────────────────────────────
+fastapi
+uvicorn[standard]
+pydantic
+email-validator
+python-multipart
+httpx
+
+# ─── Database & ORM ──────────────────────────────────────────
+SQLAlchemy
+alembic
+
+# ─── Security & Authentication ───────────────────────────────
+PyJWT
+passlib[argon2,bcrypt]
+argon2-cffi
+bcrypt
+
+# ─── Core UI ─────────────────────────────────────────────────
 PyQt6
 pyqtgraph
 PyOpenGL
 trimesh
 
-# ─── DXF & Drawing ─────────────────────────────────────────
+# ─── DXF & Drawing ───────────────────────────────────────────
 ezdxf
-matplotlib
+matplotlib==3.10.9
 rectpack
+shapely
 
-# ─── Image Processing ──────────────────────────────────────
+# ─── Image Processing ────────────────────────────────────────
 opencv-python-headless
 Pillow
 scikit-image
 numpy
 
-# ─── AI / ML Models ────────────────────────────────────────
+# ─── AI / ML Models ──────────────────────────────────────────
 torch
 torchvision
 transformers
@@ -30,13 +49,18 @@ vtracer
 pycocotools
 triton-windows ; sys_platform == "win32"
 
-# ─── Gemini & APIs ─────────────────────────────────────────
+# ─── Gemini & APIs ───────────────────────────────────────────
 google-genai
 requests
 
-# ─── Image2CAD extras ──────────────────────────────────────
+# ─── Image2CAD extras ────────────────────────────────────────
 scipy
+potracer
 
-# ─── Utils ─────────────────────────────────────────────────
+# ─── Utils ───────────────────────────────────────────────────
 python-dotenv
 psutil
+fast-simplification
+
+# ─── Testing ─────────────────────────────────────────────────
+pytest

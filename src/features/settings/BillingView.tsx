@@ -1,18 +1,25 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
   CreditCard, Check, AlertCircle, ShieldCheck, Clock,
-  Calendar, Zap, ArrowRight, UploadCloud, X, CheckCircle2,
-  FileText, User, DollarSign, Building2, Smartphone, Banknote,
-  Plus, Trash2, Star, Lock
+  Calendar, Zap, ArrowRight, X, CheckCircle2,
+  Lock, ExternalLink, RefreshCw
 } from 'lucide-react';
 import { useBillingStore } from '../../app/store/useBillingStore';
 import { useAuthStore } from '../../app/store/useAuthStore';
-import { PlanId, PlanDetails, PaymentRecord, PaymentMethodItem } from '../../types';
+import { PlanId, PlanDetails, PaymentMethodItem } from '../../types';
 import { billingApiService } from '../../services/api/billing';
+import { paddleService } from '../../services/paddle/paddleService';
 
 interface BillingViewProps {
   initialTab?: 'plans' | 'payment_methods' | 'history' | 'admin';
 }
+
+const PADDLE_PRICE_MAP: Record<PlanId, string> = {
+  free: '',
+  pro: 'pri_01m2p85k69p7fxaa2aam45r4jw',
+  pro_plus: 'pri_01m2p89n5cce3wjzk8y1aerbg1',
+  business: 'pri_01m2p8cbbevbzyvxgp5pfsg746',
+};
 
 export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }) => {
   const { user } = useAuthStore();
@@ -26,57 +33,62 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
     cycleEndDate,
     isAdmin,
     plansCatalog,
-    paymentConfig,
     paymentHistory,
     adminPayments,
-    isLoading,
-    isSubmittingPayment,
     fetchBillingStatus,
     fetchPaymentConfig,
     fetchPaymentHistory,
     fetchAdminPayments,
-    submitPaymentRequest,
-    uploadPaymentProof,
     approvePayment,
     rejectPayment,
-    mockCheckout
   } = useBillingStore();
 
   const [activeSubTab, setActiveSubTab] = useState<'plans' | 'payment_methods' | 'history' | 'admin'>(initialTab);
 
+  // Paddle Subscription Details
+  const [paddleSubscription, setPaddleSubscription] = useState<{
+    paddle_customer_id?: string | null;
+    paddle_subscription_id?: string | null;
+    subscription_status?: string | null;
+    next_billing_date?: string | null;
+    cancel_url?: string | null;
+    update_url?: string | null;
+  } | null>(null);
+
   // Saved Payment Methods state
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethodItem[]>([]);
   const [isLoadingMethods, setIsLoadingMethods] = useState(false);
-  const [isAddingMethod, setIsAddingMethod] = useState(false);
-  const [cardHolder, setCardHolder] = useState('');
-  const [cardNumber, setCardNumber] = useState('');
-  const [cardExpMonth, setCardExpMonth] = useState('12');
-  const [cardExpYear, setCardExpYear] = useState('2028');
-  const [cardCvc, setCardCvc] = useState('');
-  const [cardMakeDefault, setCardMakeDefault] = useState(true);
   const [methodActionMsg, setMethodActionMsg] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
 
   // Upgrade Modal State
   const [selectedPlanForUpgrade, setSelectedPlanForUpgrade] = useState<PlanDetails | null>(null);
-  const [paymentMethod, setPaymentMethod] = useState<'instapay' | 'cash'>('instapay');
-  const [proofReference, setProofReference] = useState('');
-  const [proofFile, setProofFile] = useState<File | null>(null);
-  const [submitSuccessMsg, setSubmitSuccessMsg] = useState<string | null>(null);
-  const [submitErrorMsg, setSubmitErrorMsg] = useState<string | null>(null);
+  const [isOpeningCheckout, setIsOpeningCheckout] = useState(false);
+  const [checkoutErrorMsg, setCheckoutErrorMsg] = useState<string | null>(null);
+  const [isCheckingSync, setIsCheckingSync] = useState(false);
 
   // Admin Review action state
   const [adminActionMsg, setAdminActionMsg] = useState<string | null>(null);
   const [processingPaymentId, setProcessingPaymentId] = useState<string | null>(null);
-  const [mockCheckoutMsg, setMockCheckoutMsg] = useState<string | null>(null);
-  const isDev = import.meta.env.DEV;
+
+  const pollTimerRef = useRef<NodeJS.Timeout | null>(null);
+
+  const loadPaddleDetails = async () => {
+    try {
+      const data = await billingApiService.getPaddleSubscription();
+      setPaddleSubscription(data);
+    } catch {
+      // Fallback silently if offline or endpoint unavailable
+    }
+  };
 
   const loadSavedMethods = async () => {
     setIsLoadingMethods(true);
     try {
       const data = await billingApiService.getPaymentMethods();
-      setPaymentMethods(data.payment_methods || []);
-    } catch (err: any) {
-      console.error('Failed to load payment methods:', err);
+      setPaymentMethods(data?.payment_methods || []);
+    } catch {
+      // Gracefully set empty array without console 404 noise
+      setPaymentMethods([]);
     } finally {
       setIsLoadingMethods(false);
     }
@@ -84,19 +96,26 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
 
   useEffect(() => {
     fetchBillingStatus(user?.id);
+    loadPaddleDetails();
     fetchPaymentConfig();
     fetchPaymentHistory();
     loadSavedMethods();
     if (user?.is_admin || isAdmin) {
       fetchAdminPayments();
     }
+
+    return () => {
+      if (pollTimerRef.current) {
+        clearInterval(pollTimerRef.current);
+      }
+    };
   }, [user?.id, user?.is_admin, isAdmin]);
 
   // Calculate percentage used
   const usagePercentage = Math.min(100, Math.round((requestsUsed / (requestsLimit || 1)) * 100));
 
   // Format cycle date
-  const formatCycleDate = (dateStr: string | null) => {
+  const formatCycleDate = (dateStr: string | null | undefined) => {
     if (!dateStr) return 'Active Cycle';
     try {
       const d = new Date(dateStr);
@@ -112,10 +131,11 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
 
   // Days remaining in cycle
   const getDaysRemaining = () => {
-    if (!cycleEndDate) return null;
+    const endTarget = paddleSubscription?.next_billing_date || cycleEndDate;
+    if (!endTarget) return null;
     try {
       const now = new Date().getTime();
-      const end = new Date(cycleEndDate).getTime();
+      const end = new Date(endTarget).getTime();
       const diffDays = Math.ceil((end - now) / (1000 * 60 * 60 * 24));
       return Math.max(0, diffDays);
     } catch {
@@ -127,106 +147,68 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
 
   const handleOpenUpgrade = (plan: PlanDetails) => {
     setSelectedPlanForUpgrade(plan);
-    setPaymentMethod('instapay');
-    setProofReference('');
-    setProofFile(null);
-    setSubmitSuccessMsg(null);
-    setSubmitErrorMsg(null);
+    setCheckoutErrorMsg(null);
   };
 
   const handleCloseUpgrade = () => {
     setSelectedPlanForUpgrade(null);
-    setProofReference('');
-    setProofFile(null);
-    setSubmitSuccessMsg(null);
-    setSubmitErrorMsg(null);
+    setCheckoutErrorMsg(null);
+    setIsOpeningCheckout(false);
   };
 
-  const handleSubmitPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleLaunchPaddleCheckout = async () => {
     if (!selectedPlanForUpgrade) return;
-    if (!proofReference.trim() && !proofFile) {
-      setSubmitErrorMsg('Please provide a payment reference code or attach a receipt image.');
+    const priceId = PADDLE_PRICE_MAP[selectedPlanForUpgrade.id];
+    if (!priceId) {
+      setCheckoutErrorMsg('Invalid price identifier for this tier.');
       return;
     }
 
-    setSubmitErrorMsg(null);
-    setSubmitSuccessMsg(null);
+    setIsOpeningCheckout(true);
+    setCheckoutErrorMsg(null);
 
     try {
-      if (proofFile) {
-        await uploadPaymentProof(proofFile, selectedPlanForUpgrade.id, paymentMethod, proofReference.trim());
-      } else {
-        await submitPaymentRequest(selectedPlanForUpgrade.id, paymentMethod, proofReference.trim());
-      }
-      setSubmitSuccessMsg(`Payment request for ${selectedPlanForUpgrade.name} submitted successfully! Your subscription will be activated once verified by our team.`);
-      setTimeout(() => {
-        handleCloseUpgrade();
-      }, 2500);
-    } catch (err: any) {
-      setSubmitErrorMsg(err.response?.data?.detail || err.message || 'Failed to submit payment request.');
-    }
-  };
-
-  const handleAddNewMethod = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const cleanNumber = cardNumber.replace(/\s+/g, '');
-    if (cleanNumber.length < 13 || cleanNumber.length > 19) {
-      setMethodActionMsg({ type: 'error', text: 'Please enter a valid card number.' });
-      return;
-    }
-
-    // Detect card brand
-    let detectedBrand = 'visa';
-    if (cleanNumber.startsWith('5') || cleanNumber.startsWith('2')) detectedBrand = 'mastercard';
-    else if (cleanNumber.startsWith('3')) detectedBrand = 'amex';
-
-    const last4Digits = cleanNumber.slice(-4);
-    // Generate secure client-side gateway vault token
-    const secureToken = `tok_vault_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
-
-    setMethodActionMsg(null);
-    try {
-      await billingApiService.addPaymentMethod({
-        provider: 'stripe',
-        payment_token: secureToken,
-        brand: detectedBrand,
-        last4: last4Digits,
-        exp_month: parseInt(cardExpMonth, 10),
-        exp_year: parseInt(cardExpYear, 10),
-        holder_name: cardHolder.trim() || user?.name || 'Cardholder',
-        is_default: cardMakeDefault,
+      await paddleService.openCheckout({
+        planId: selectedPlanForUpgrade.id,
+        priceId,
+        user: {
+          id: user?.id,
+          email: user?.email,
+          name: user?.name,
+        },
       });
 
-      setMethodActionMsg({ type: 'success', text: 'Secure payment method registered successfully!' });
-      setIsAddingMethod(false);
-      setCardNumber('');
-      setCardCvc('');
-      setCardHolder('');
-      await loadSavedMethods();
+      // Poll backend every 3 seconds for 30 seconds to catch verified webhook confirmation
+      let attempts = 0;
+      if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+
+      pollTimerRef.current = setInterval(async () => {
+        attempts++;
+        await fetchBillingStatus(user?.id);
+        await loadPaddleDetails();
+
+        if (attempts >= 10) {
+          if (pollTimerRef.current) clearInterval(pollTimerRef.current);
+        }
+      }, 3000);
+
+      handleCloseUpgrade();
     } catch (err: any) {
-      setMethodActionMsg({ type: 'error', text: err.response?.data?.detail || err.message || 'Failed to register payment method.' });
+      console.error('[Billing] Checkout error:', err);
+      setCheckoutErrorMsg(err?.message || 'Could not open Paddle checkout. Please try again.');
+    } finally {
+      setIsOpeningCheckout(false);
     }
   };
 
-  const handleDeleteMethod = async (id: string) => {
-    if (!confirm('Are you sure you want to remove this payment method?')) return;
+  const handleManualSync = async () => {
+    setIsCheckingSync(true);
     try {
-      await billingApiService.deletePaymentMethod(id);
-      await loadSavedMethods();
-      setMethodActionMsg({ type: 'success', text: 'Payment method removed.' });
-    } catch (err: any) {
-      setMethodActionMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to remove payment method.' });
-    }
-  };
-
-  const handleSetDefaultMethod = async (id: string) => {
-    try {
-      await billingApiService.setDefaultPaymentMethod(id);
-      await loadSavedMethods();
-      setMethodActionMsg({ type: 'success', text: 'Default payment method updated.' });
-    } catch (err: any) {
-      setMethodActionMsg({ type: 'error', text: err.response?.data?.detail || 'Failed to set default method.' });
+      await fetchBillingStatus(user?.id);
+      await loadPaddleDetails();
+      await fetchPaymentHistory();
+    } finally {
+      setIsCheckingSync(false);
     }
   };
 
@@ -237,21 +219,11 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
       const res = await approvePayment(paymentId, 'Approved via Admin Panel');
       setAdminActionMsg(res.message || 'Payment approved successfully and user subscription updated.');
       await fetchBillingStatus(user?.id);
+      await loadPaddleDetails();
     } catch (err: any) {
       setAdminActionMsg(`Error: ${err.response?.data?.detail || err.message}`);
     } finally {
       setProcessingPaymentId(null);
-    }
-  };
-
-  const handleMockCheckout = async (planId: PlanId) => {
-    if (planId === 'free') return;
-    setMockCheckoutMsg(null);
-    try {
-      const res = await mockCheckout(planId);
-      setMockCheckoutMsg(res.message || `Mock checkout succeeded — plan upgraded to ${planId}.`);
-    } catch (err: any) {
-      setMockCheckoutMsg(err.response?.data?.detail || err.message || 'Mock checkout failed.');
     }
   };
 
@@ -277,7 +249,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-xl font-bold text-slate-900 tracking-tight">Billing &amp; Subscription Management</h1>
-          <p className="text-xs text-slate-500 mt-0.5">Manage your Anti Design plan, tokens, payment methods, and invoice history.</p>
+          <p className="text-xs text-slate-500 mt-0.5">Manage your Anti Design plan, Paddle subscriptions, tokens, and invoice history.</p>
         </div>
 
         {/* Sub-Tabs */}
@@ -326,13 +298,20 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
             <div className="relative z-10 flex flex-col md:flex-row md:items-center justify-between gap-6">
               
               <div className="space-y-2">
-                <div className="flex items-center space-x-2">
+                <div className="flex items-center space-x-2 flex-wrap gap-y-1">
                   <span className="px-2.5 py-0.5 rounded-full text-[10px] font-black uppercase tracking-wider bg-indigo-500/30 text-indigo-300 border border-indigo-400/30">
                     Active Plan
                   </span>
+                  {paddleSubscription?.subscription_status && paddleSubscription.subscription_status !== 'active' && (
+                    <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-amber-500/30 text-amber-300 border border-amber-400/30">
+                      Status: {paddleSubscription.subscription_status}
+                    </span>
+                  )}
                   <span className="text-xs text-slate-300 flex items-center space-x-1">
                     <Calendar className="w-3.5 h-3.5 mr-1" />
-                    <span>Cycle Ends: {formatCycleDate(cycleEndDate)} ({daysRemaining} days left)</span>
+                    <span>
+                      {paddleSubscription?.next_billing_date ? 'Next Billing Date:' : 'Cycle Ends:'} {formatCycleDate(paddleSubscription?.next_billing_date || cycleEndDate)} ({daysRemaining} days left)
+                    </span>
                   </span>
                 </div>
                 <h2 className="text-2xl font-black tracking-tight text-white">{planDisplayName}</h2>
@@ -341,6 +320,41 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
                     ? 'Free starter account for CAD hobbyists. Upgrade to Pro for high-precision CNC generation.' 
                     : 'Full industrial tier with high throughput generation and priority rendering pipelines.'}
                 </p>
+
+                {/* Paddle Subscription Management Actions */}
+                <div className="flex items-center space-x-3 pt-1">
+                  <button
+                    onClick={handleManualSync}
+                    disabled={isCheckingSync}
+                    className="inline-flex items-center text-[11px] font-semibold text-indigo-300 hover:text-white transition-colors"
+                  >
+                    <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isCheckingSync ? 'animate-spin' : ''}`} />
+                    <span>{isCheckingSync ? 'Syncing…' : 'Sync Status'}</span>
+                  </button>
+
+                  {paddleSubscription?.update_url && (
+                    <a
+                      href={paddleSubscription.update_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center text-[11px] font-semibold text-indigo-300 hover:text-white transition-colors"
+                    >
+                      <ExternalLink className="w-3.5 h-3.5 mr-1" />
+                      <span>Update Payment Method</span>
+                    </a>
+                  )}
+
+                  {paddleSubscription?.cancel_url && (
+                    <a
+                      href={paddleSubscription.cancel_url}
+                      target="_blank"
+                      rel="noreferrer"
+                      className="inline-flex items-center text-[11px] font-semibold text-rose-300 hover:text-rose-200 transition-colors"
+                    >
+                      <span>Manage / Cancel Subscription</span>
+                    </a>
+                  )}
+                </div>
               </div>
 
               {/* Usage Stats Gauge */}
@@ -458,25 +472,27 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
         </div>
       )}
 
-      {/* ── TAB 2: PAYMENT METHODS (Tokenized Vault) ────────────────────────── */}
+      {/* ── TAB 2: PAYMENT METHODS (Paddle Vault) ───────────────────────────── */}
       {activeSubTab === 'payment_methods' && (
         <div className="space-y-6">
           <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-6">
             
             <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div>
-                <h3 className="font-bold text-slate-900 text-base">Saved Payment Methods</h3>
-                <p className="text-xs text-slate-500">Manage payment cards securely tokenized with end-to-end encryption.</p>
+                <h3 className="font-bold text-slate-900 text-base">Payment Methods &amp; Billing Security</h3>
+                <p className="text-xs text-slate-500">Payments and card credentials are securely processed and vaulted by Paddle.</p>
               </div>
 
-              {!isAddingMethod && (
-                <button
-                  onClick={() => setIsAddingMethod(true)}
+              {paddleSubscription?.update_url && (
+                <a
+                  href={paddleSubscription.update_url}
+                  target="_blank"
+                  rel="noreferrer"
                   className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs flex items-center space-x-1.5 self-start sm:self-auto"
                 >
-                  <Plus className="w-4 h-4 mr-1" />
-                  <span>Add Payment Method</span>
-                </button>
+                  <ExternalLink className="w-4 h-4 mr-1" />
+                  <span>Update Card in Paddle Portal</span>
+                </a>
               )}
             </div>
 
@@ -484,193 +500,36 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
             <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-xs text-indigo-900 flex items-start space-x-2">
               <Lock className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
               <span>
-                <strong>PCI-DSS Compliant Storage:</strong> Anti Design never stores complete credit card numbers or security codes on our servers. All credentials are tokenized via secure cryptographic vaults.
+                <strong>PCI-DSS Compliant Storage:</strong> Anti Design never stores complete credit card numbers, CVVs, or payment security codes on local servers. All payment data is handled directly by Paddle's PCI-DSS Level 1 certified infrastructure.
               </span>
             </div>
 
-            {/* Add New Card Form */}
-            {isAddingMethod && (
-              <form onSubmit={handleAddNewMethod} className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-4">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-bold text-slate-900 text-sm flex items-center space-x-1.5">
-                    <CreditCard className="w-4 h-4 text-indigo-600 mr-1" />
-                    <span>Add New Card</span>
-                  </h4>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingMethod(false)}
-                    className="p-1 text-slate-400 hover:text-slate-600 rounded-lg"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="space-y-1 sm:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700">Cardholder Name</label>
-                    <input
-                      type="text"
-                      required
-                      placeholder="e.g. John Doe"
-                      value={cardHolder}
-                      onChange={(e) => setCardHolder(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900 focus:outline-none focus:ring-2 focus:ring-indigo-600/30"
-                    />
-                  </div>
-
-                  <div className="space-y-1 sm:col-span-2">
-                    <label className="text-xs font-semibold text-slate-700">Card Number</label>
-                    <input
-                      type="text"
-                      required
-                      maxLength={19}
-                      placeholder="4000 1234 5678 9010"
-                      value={cardNumber}
-                      onChange={(e) => setCardNumber(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 tracking-wider focus:outline-none focus:ring-2 focus:ring-indigo-600/30"
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-2">
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-700">Expiry Month</label>
-                      <select
-                        value={cardExpMonth}
-                        onChange={(e) => setCardExpMonth(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900"
-                      >
-                        {Array.from({ length: 12 }, (_, i) => i + 1).map((m) => (
-                          <option key={m} value={m}>{m.toString().padStart(2, '0')}</option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="space-y-1">
-                      <label className="text-xs font-semibold text-slate-700">Expiry Year</label>
-                      <select
-                        value={cardExpYear}
-                        onChange={(e) => setCardExpYear(e.target.value)}
-                        className="w-full px-3 py-2 bg-white border border-slate-200 rounded-xl text-xs font-semibold text-slate-900"
-                      >
-                        {[2024, 2025, 2026, 2027, 2028, 2029, 2030, 2031, 2032].map((y) => (
-                          <option key={y} value={y}>{y}</option>
-                        ))}
-                      </select>
+            {/* Paddle Subscription Vault Details */}
+            {paddleSubscription?.paddle_subscription_id ? (
+              <div className="bg-slate-50 border border-slate-200 rounded-2xl p-5 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-2">
+                    <ShieldCheck className="w-5 h-5 text-emerald-600" />
+                    <div>
+                      <div className="font-bold text-slate-900 text-xs">Paddle Managed Subscription</div>
+                      <div className="text-[11px] font-mono text-slate-500">ID: {paddleSubscription.paddle_subscription_id}</div>
                     </div>
                   </div>
-
-                  <div className="space-y-1">
-                    <label className="text-xs font-semibold text-slate-700">CVC / CVV</label>
-                    <input
-                      type="password"
-                      required
-                      maxLength={4}
-                      placeholder="123"
-                      value={cardCvc}
-                      onChange={(e) => setCardCvc(e.target.value)}
-                      className="w-full px-3.5 py-2 bg-white border border-slate-200 rounded-xl text-xs font-mono font-bold text-slate-900 tracking-widest focus:outline-none focus:ring-2 focus:ring-indigo-600/30"
-                    />
-                  </div>
+                  <span className="px-2.5 py-1 rounded-md text-[10px] font-bold uppercase bg-emerald-100 text-emerald-800">
+                    {paddleSubscription.subscription_status || 'Active'}
+                  </span>
                 </div>
 
-                <div className="flex items-center space-x-2 pt-2">
-                  <input
-                    type="checkbox"
-                    id="makeDefault"
-                    checked={cardMakeDefault}
-                    onChange={(e) => setCardMakeDefault(e.target.checked)}
-                    className="rounded text-indigo-600 focus:ring-indigo-500"
-                  />
-                  <label htmlFor="makeDefault" className="text-xs font-medium text-slate-700 cursor-pointer">
-                    Set as default payment method for subscriptions
-                  </label>
+                <div className="text-xs text-slate-600 pt-2 border-t border-slate-200 flex flex-col sm:flex-row justify-between gap-2">
+                  <span>Customer ID: <strong className="font-mono text-slate-800">{paddleSubscription.paddle_customer_id || 'Paddle Vault'}</strong></span>
+                  <span>Next Renewal: <strong className="text-slate-800">{formatCycleDate(paddleSubscription.next_billing_date)}</strong></span>
                 </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white text-xs font-bold rounded-xl shadow-xs"
-                  >
-                    Save Encrypted Card
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setIsAddingMethod(false)}
-                    className="px-3 py-2 text-slate-600 hover:text-slate-900 text-xs font-semibold"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
-            )}
-
-            {/* List of Saved Cards */}
-            {isLoadingMethods ? (
-              <div className="text-center py-8 text-xs text-slate-400">Loading saved payment methods…</div>
-            ) : paymentMethods.length === 0 ? (
-              <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
-                <CreditCard className="w-8 h-8 text-slate-300 mx-auto mb-2" />
-                <p className="text-xs font-semibold text-slate-600">No payment methods saved yet.</p>
-                <p className="text-[11px] text-slate-400 mt-0.5">Add a credit or debit card for seamless subscription renewals.</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                {paymentMethods.map((pm) => (
-                  <div
-                    key={pm.id}
-                    className={`border rounded-2xl p-4 flex flex-col justify-between relative transition-all ${
-                      pm.is_default
-                        ? 'bg-indigo-50/50 border-indigo-300 shadow-xs'
-                        : 'bg-white border-slate-200 hover:border-slate-300'
-                    }`}
-                  >
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center space-x-2.5">
-                        <div className="w-10 h-7 rounded-md bg-slate-900 text-white flex items-center justify-center font-mono text-[10px] font-black uppercase">
-                          {pm.brand}
-                        </div>
-                        <div>
-                          <div className="font-mono font-bold text-slate-900 text-sm">
-                            •••• •••• •••• {pm.last4}
-                          </div>
-                          <div className="text-[11px] text-slate-500">
-                            Expires {pm.exp_month.toString().padStart(2, '0')}/{pm.exp_year}
-                          </div>
-                        </div>
-                      </div>
-
-                      {pm.is_default && (
-                        <span className="px-2 py-0.5 bg-indigo-100 text-indigo-800 rounded-md text-[10px] font-bold">
-                          Default
-                        </span>
-                      )}
-                    </div>
-
-                    <div className="text-[11px] text-slate-600 font-medium mb-3">
-                      Holder: {pm.holder_name || user?.name || 'Engineer'}
-                    </div>
-
-                    <div className="flex items-center justify-between border-t border-slate-100 pt-3">
-                      {!pm.is_default ? (
-                        <button
-                          onClick={() => handleSetDefaultMethod(pm.id)}
-                          className="text-[11px] font-bold text-indigo-600 hover:text-indigo-800"
-                        >
-                          Make Default
-                        </button>
-                      ) : (
-                        <span className="text-[11px] text-slate-400 font-medium">Primary Card</span>
-                      )}
-
-                      <button
-                        onClick={() => handleDeleteMethod(pm.id)}
-                        className="text-slate-400 hover:text-rose-600 p-1 rounded-lg transition-colors"
-                        title="Remove Card"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    </div>
-                  </div>
-                ))}
+              <div className="text-center py-10 border-2 border-dashed border-slate-200 rounded-2xl">
+                <CreditCard className="w-8 h-8 text-slate-300 mx-auto mb-2" />
+                <p className="text-xs font-semibold text-slate-600">No active Paddle payment vault yet.</p>
+                <p className="text-[11px] text-slate-400 mt-0.5">Upgrade to a Pro or Business plan using Paddle Checkout to establish your secure payment vault.</p>
               </div>
             )}
 
@@ -681,7 +540,17 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
       {/* ── TAB 3: INVOICES & HISTORY ────────────────────────────────────────── */}
       {activeSubTab === 'history' && (
         <div className="bg-white border border-slate-200/90 rounded-2xl p-6 shadow-xs space-y-4">
-          <h3 className="font-bold text-slate-900 text-base">Payment &amp; Invoicing History</h3>
+          <div className="flex justify-between items-center">
+            <h3 className="font-bold text-slate-900 text-base">Payment &amp; Invoicing History</h3>
+            <button
+              onClick={handleManualSync}
+              disabled={isCheckingSync}
+              className="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center"
+            >
+              <RefreshCw className={`w-3.5 h-3.5 mr-1 ${isCheckingSync ? 'animate-spin' : ''}`} />
+              <span>Refresh</span>
+            </button>
+          </div>
           
           {paymentHistory.length === 0 ? (
             <div className="text-center py-10 text-xs text-slate-400">
@@ -720,7 +589,7 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
           <div className="flex justify-between items-center">
             <div>
               <h3 className="font-bold text-slate-900 text-base">Administrative Payment Approvals</h3>
-              <p className="text-xs text-slate-500">Review pending bank transfers, InstaPay transfers, and cash receipts.</p>
+              <p className="text-xs text-slate-500">Review pending administrative payments and webhook transactions.</p>
             </div>
           </div>
 
@@ -781,84 +650,68 @@ export const BillingView: React.FC<BillingViewProps> = ({ initialTab = 'plans' }
         </div>
       )}
 
-      {/* ── MANUAL PAYMENT MODAL ────────────────────────────────────────────── */}
+      {/* ── PADDLE CHECKOUT MODAL ───────────────────────────────────────────── */}
       {selectedPlanForUpgrade && (
         <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-xs flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-4">
+          <div className="bg-white rounded-2xl max-w-md w-full p-6 shadow-xl space-y-5">
             <div className="flex justify-between items-center">
-              <h3 className="font-bold text-slate-900 text-base">Upgrade to {selectedPlanForUpgrade.name}</h3>
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-indigo-600 bg-indigo-50 px-2 py-0.5 rounded-md">
+                  Paddle Subscription
+                </span>
+                <h3 className="font-bold text-slate-900 text-base mt-1">Upgrade to {selectedPlanForUpgrade.name}</h3>
+              </div>
               <button onClick={handleCloseUpgrade} className="p-1 text-slate-400 hover:text-slate-600 rounded-lg">
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600">
-              Amount to pay: <strong className="font-mono text-indigo-600 text-sm">${selectedPlanForUpgrade.price} USD</strong>
-            </p>
-
-            {submitSuccessMsg ? (
-              <div className="p-4 bg-emerald-50 text-emerald-800 border border-emerald-200 rounded-xl text-xs font-bold">
-                {submitSuccessMsg}
+            <div className="bg-slate-50 border border-slate-200/80 rounded-xl p-4 space-y-2">
+              <div className="flex justify-between items-baseline">
+                <span className="text-xs text-slate-600">Monthly Subscription:</span>
+                <div className="flex items-baseline space-x-1">
+                  <span className="font-mono text-2xl font-black text-slate-900">${selectedPlanForUpgrade.price}</span>
+                  <span className="text-xs text-slate-500 font-medium">USD / mo</span>
+                </div>
               </div>
-            ) : (
-              <form onSubmit={handleSubmitPayment} className="space-y-4">
-                {submitErrorMsg && (
-                  <div className="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-semibold">
-                    {submitErrorMsg}
-                  </div>
-                )}
+              <div className="flex justify-between items-center text-[11px] text-slate-500 pt-2 border-t border-slate-200/60">
+                <span>Generation Limit:</span>
+                <span className="font-bold text-indigo-600">{selectedPlanForUpgrade.requests_limit} AI CAD Requests</span>
+              </div>
+            </div>
 
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">Payment Option</label>
-                  <select
-                    value={paymentMethod}
-                    onChange={(e) => setPaymentMethod(e.target.value as any)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900"
-                  >
-                    <option value="instapay">InstaPay Mobile Wallet Transfer</option>
-                    <option value="cash">Direct Cash / Office Settlement</option>
-                  </select>
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">Reference / Transfer Code</label>
-                  <input
-                    type="text"
-                    placeholder="e.g. TRX-982314981"
-                    value={proofReference}
-                    onChange={(e) => setProofReference(e.target.value)}
-                    className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs font-semibold text-slate-900"
-                  />
-                </div>
-
-                <div className="space-y-1">
-                  <label className="text-xs font-semibold text-slate-700">Attach Receipt (Optional)</label>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={(e) => setProofFile(e.target.files?.[0] || null)}
-                    className="w-full text-xs text-slate-500 file:mr-2 file:py-1 file:px-3 file:rounded-lg file:border-0 file:text-xs file:font-semibold file:bg-indigo-50 file:text-indigo-700 hover:file:bg-indigo-100"
-                  />
-                </div>
-
-                <div className="flex items-center space-x-2 pt-2">
-                  <button
-                    type="submit"
-                    disabled={isSubmittingPayment}
-                    className="flex-1 py-2.5 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs disabled:opacity-50"
-                  >
-                    {isSubmittingPayment ? 'Submitting…' : 'Submit for Verification'}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={handleCloseUpgrade}
-                    className="px-4 py-2.5 text-slate-600 hover:text-slate-900 text-xs font-semibold"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </form>
+            {checkoutErrorMsg && (
+              <div className="p-3 bg-rose-50 text-rose-800 border border-rose-200 rounded-xl text-xs font-semibold flex items-start space-x-2">
+                <AlertCircle className="w-4 h-4 text-rose-600 shrink-0 mt-0.5" />
+                <span>{checkoutErrorMsg}</span>
+              </div>
             )}
+
+            <div className="p-3 bg-indigo-50/70 border border-indigo-100 rounded-xl text-[11px] text-indigo-900 flex items-start space-x-2">
+              <ShieldCheck className="w-4 h-4 text-indigo-600 shrink-0 mt-0.5" />
+              <span>
+                Checkout is processed securely via <strong>Paddle</strong>. Supports major Credit/Debit cards, Apple Pay, Google Pay, and PayPal.
+              </span>
+            </div>
+
+            <div className="flex items-center space-x-2 pt-1">
+              <button
+                type="button"
+                onClick={handleLaunchPaddleCheckout}
+                disabled={isOpeningCheckout}
+                className="flex-1 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl text-xs font-bold shadow-xs flex items-center justify-center space-x-2 disabled:opacity-50 transition-all"
+              >
+                <span>{isOpeningCheckout ? 'Opening Paddle Checkout…' : `Proceed to Subscribe ($${selectedPlanForUpgrade.price}/mo)`}</span>
+                <ArrowRight className="w-4 h-4" />
+              </button>
+              <button
+                type="button"
+                onClick={handleCloseUpgrade}
+                className="px-4 py-3 text-slate-600 hover:text-slate-900 text-xs font-semibold"
+              >
+                Cancel
+              </button>
+            </div>
 
           </div>
         </div>

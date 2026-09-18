@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://127.0.0.1:8000; img-src 'self' data: blob: http://localhost:5173 http://127.0.0.1:5173 http://127.0.0.1:8000 https://fonts.googleapis.com https://fonts.gstatic.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com; style-src-elem 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com; font-src 'self' data: https://fonts.gstatic.com https://cdn.paddle.com https://sandbox-cdn.paddle.com; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com https://sandbox-cdn.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com; frame-src 'self' https://buy.paddle.com https://sandbox-buy.paddle.com https: about: blank: data: blob:; child-src 'self' https://buy.paddle.com https://sandbox-buy.paddle.com https: about: blank: data: blob:; connect-src 'self' http://localhost:5173 http://127.0.0.1:5173 http://127.0.0.1:8000 ws://localhost:5173 ws://127.0.0.1:5173 https://api.paddle.com https://sandbox-api.paddle.com https://buy.paddle.com https://sandbox-buy.paddle.com https://cdn.paddle.com https://sandbox-cdn.paddle.com https://*.ngrok-free.app https://*.ngrok.io https: wss:;">
+    <title>Anti Design — Desktop CAD Application</title>
+  </head>
+  <body className="bg-cad-bg text-cad-textMain font-sans overflow-hidden">
+    <div id="root">
+      <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;width:100vw;height:100vh;background:#0f172a;color:#f8fafc;font-family:-apple-system,BlinkMacSystemFont,Segoe UI,sans-serif;user-select:none;">
+        <div style="width:48px;height:48px;border-radius:14px;background:linear-gradient(135deg,#6366f1,#4338ca);display:flex;align-items:center;justify-content:center;margin-bottom:16px;box-shadow:0 10px 25px -5px rgba(99,102,241,0.5);">
+          <svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="#ffffff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m21 16-9 5-9-5V8l9-5 9 5v8Z"/>
+            <path d="m3.27 6.96 8.73 4.85 8.73-4.85"/>
+            <path d="M12 22V12"/>
+          </svg>
+        </div>
+        <div style="font-size:18px;font-weight:800;letter-spacing:-0.02em;margin-bottom:6px;">CNC Design Generator</div>
+        <div style="font-size:11px;color:#94a3b8;font-weight:600;letter-spacing:0.05em;text-transform:uppercase;margin-bottom:20px;">CNC Design Generator</div>
+        <div style="width:20px;height:20px;border:2.5px solid rgba(99,102,241,0.25);border-top-color:#6366f1;border-radius:50%;animation:spin 0.8s linear infinite;"></div>
+        <style>@keyframes spin{to{transform:rotate(360deg)}}</style>
+      </div>
+    </div>
+    <script type="module" src="/src/main.tsx"></script>
+  </body>
+</html>

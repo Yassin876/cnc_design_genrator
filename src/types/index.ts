@@ -65,6 +65,12 @@ export interface SubscriptionStatus {
   cycle_end_date: string | null;
   is_admin: boolean;
   plans_catalog: Record<string, PlanDetails>;
+  paddle_customer_id?: string | null;
+  paddle_subscription_id?: string | null;
+  subscription_status?: string | null;
+  next_billing_date?: string | null;
+  cancel_url?: string | null;
+  update_url?: string | null;
 }
 
 export interface PaymentRecord {

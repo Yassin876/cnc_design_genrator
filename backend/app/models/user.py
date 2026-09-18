@@ -27,6 +27,14 @@ class User(Base):
     cycle_end_date = Column(DateTime, default=lambda: datetime.utcnow() + timedelta(days=30), nullable=False)
     is_admin = Column(Boolean, default=False, nullable=False)
 
+    # Paddle Billing Integration fields
+    paddle_customer_id = Column(String, nullable=True, index=True)
+    paddle_subscription_id = Column(String, nullable=True, index=True)
+    subscription_status = Column(String, default="active", nullable=False)  # 'active', 'trialing', 'past_due', 'canceled', 'paused'
+    next_billing_date = Column(DateTime, nullable=True)
+    cancel_url = Column(String, nullable=True)
+    update_url = Column(String, nullable=True)
+
     otps = relationship("OTPVerification", back_populates="user", cascade="all, delete-orphan")
     projects = relationship("Project", back_populates="owner", cascade="all, delete-orphan")
     payments = relationship("Payment", back_populates="user", cascade="all, delete-orphan")

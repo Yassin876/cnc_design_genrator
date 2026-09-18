@@ -1,0 +1,6 @@
+{
+  "_comment": "Configure external AI generation endpoints here without rebuilding or restarting the application. Changes take effect on the next request.",
+  "model_endpoint": "https://chargable-ashley-tychistic.ngrok-free.dev",
+  "external_2d_api_url": "",
+  "external_2d_api_key": ""
+}

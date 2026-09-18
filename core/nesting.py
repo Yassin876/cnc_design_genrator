@@ -190,11 +190,37 @@ def _ensure_block(doc, source_path: str, block_name: str):
     src_msp = src.modelspace()
     block = doc.blocks.new(name=block_name)
 
+    # Get the bounding box of the source part
+    try:
+        extents = dxf_bbox.extents(src_msp)
+        if extents.has_data:
+            min_x, min_y = extents.extmin.x, extents.extmin.y
+            print(f"[Nesting] Block {block_name}: min_x={min_x}, min_y={min_y}")
+        else:
+            min_x, min_y = 0.0, 0.0
+    except Exception:
+        min_x, min_y = 0.0, 0.0
+
+    # Copy entities and apply translation transformation
     for entity in src_msp:
         try:
-            block.add_entity(entity.copy())
-        except Exception:
-            pass
+            copied_entity = entity.copy()
+            # Use ezdxf's transformation capability
+            # This automatically handles all entity types correctly
+            from ezdxf.math import Matrix44
+            # Create translation matrix to shift by (-min_x, -min_y)
+            m = Matrix44.translate(-min_x, -min_y, 0)
+            # Apply transformation if the entity supports it
+            if hasattr(copied_entity, 'transform'):
+                copied_entity.transform(m)
+            block.add_entity(copied_entity)
+        except Exception as e:
+            print(f"[Nesting] Warning: Failed to copy entity to block: {e}")
+            # Fallback: just copy without transformation
+            try:
+                block.add_entity(entity.copy())
+            except Exception:
+                pass
 
 
 def sheet_utilization(placements: List[Dict[str, Any]], sheet_width: float, sheet_height: float) -> float:
@@ -226,7 +252,6 @@ def _try_pack_parts_on_sheet(
     True Shape Irregular Nesting (Shapely Polygon Geometry & Spacing Buffer).
     """
     sheet_poly = box(0, 0, sheet_width, sheet_height)
-    half_spacing = spacing / 2.0
 
     placed_items: List[Tuple[Polygon, Polygon]] = []
     placements: List[Dict[str, Any]] = []
@@ -255,35 +280,36 @@ def _try_pack_parts_on_sheet(
             if pw + spacing > sheet_width or ph + spacing > sheet_height:
                 continue
 
-            rot_buf = rot_p.buffer(half_spacing)
+            rot_buf = rot_p.buffer(spacing / 2.0)
 
             # Generate candidate placement points (tx, ty)
             cand_pts = set()
-            cand_pts.add((half_spacing, half_spacing))
+            # Start from positive coordinates with spacing
+            cand_pts.add((spacing, spacing))
 
             for _p_poly, p_buf in placed_items:
                 b_minx, b_miny, b_maxx, b_maxy = p_buf.bounds
-                cand_pts.add((round(b_maxx + half_spacing, 2), round(half_spacing, 2)))
-                cand_pts.add((round(half_spacing, 2), round(b_maxy + half_spacing, 2)))
-                cand_pts.add((round(b_maxx + half_spacing, 2), round(b_miny + half_spacing, 2)))
-                cand_pts.add((round(b_minx + half_spacing, 2), round(b_maxy + half_spacing, 2)))
-                cand_pts.add((round(b_maxx + half_spacing, 2), round(b_maxy + half_spacing, 2)))
+                cand_pts.add((round(b_maxx + spacing, 2), round(spacing, 2)))
+                cand_pts.add((round(spacing, 2), round(b_maxy + spacing, 2)))
+                cand_pts.add((round(b_maxx + spacing, 2), round(b_miny + spacing, 2)))
+                cand_pts.add((round(b_minx + spacing, 2), round(b_maxy + spacing, 2)))
+                cand_pts.add((round(b_maxx + spacing, 2), round(b_maxy + spacing, 2)))
 
             # Grid step scan along bottom-left region
             step_x = max(20.0, pw / 3.0)
             step_y = max(20.0, ph / 3.0)
 
-            gx = half_spacing
-            while gx <= sheet_width - pw - half_spacing:
-                gy = half_spacing
-                while gy <= sheet_height - ph - half_spacing:
+            gx = spacing
+            while gx <= sheet_width - pw - spacing:
+                gy = spacing
+                while gy <= sheet_height - ph - spacing:
                     cand_pts.add((round(gx, 2), round(gy, 2)))
                     gy += step_y
                 gx += step_x
 
             # Evaluate candidate points
             for tx, ty in cand_pts:
-                if tx + pw + half_spacing > sheet_width or ty + ph + half_spacing > sheet_height:
+                if tx + pw + spacing > sheet_width or ty + ph + spacing > sheet_height:
                     continue
 
                 score = ty * 10000.0 + tx
@@ -304,26 +330,19 @@ def _try_pack_parts_on_sheet(
 
                 if not overlap:
                     min_score = score
-                    insert_x = tx - part.min_x
-                    insert_y = ty - part.min_y
-                    if angle == 90:
-                        insert_x = tx + part.max_y
-                        insert_y = ty - part.min_x
-                    elif angle == 180:
-                        insert_x = tx + part.max_x
-                        insert_y = ty + part.max_y
-                    elif angle == 270:
-                        insert_x = tx - part.min_y
-                        insert_y = ty + part.max_x
+                    # Use the actual placement position (tx, ty) from the packing algorithm
+                    # The part is already normalized to start from (0,0) in the block
+                    insert_x = tx
+                    insert_y = ty
 
                     best_candidate = (test_poly, test_buf, {
                         "part": part.path,
                         "part_name": part.name,
                         "part_id": part.id,
-                        "x": insert_x,
+                        "x": insert_x,  # Store the actual placement position
                         "y": insert_y,
-                        "width": part.width,
-                        "height": part.height,
+                        "width": pw,  # Use actual rotated width
+                        "height": ph,  # Use actual rotated height
                         "rotation": angle,
                         "priority": part.priority,
                         "priority_order": part.priority_order,
@@ -418,7 +437,7 @@ def nest_parts(
     # Output Directory Setup
     if not output_dir:
         timestamp = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-        output_dir = os.path.join("outputs", "nesting_results", timestamp)
+        output_dir = os.path.join("storage/outputs", "nesting_results", timestamp)
     os.makedirs(output_dir, exist_ok=True)
 
     unplaced_report: List[Dict[str, Any]] = []
@@ -656,11 +675,19 @@ def nest_parts(
 
             _ensure_block(out_doc, part_path, block_name)
 
+            # Calculate the correct insert position
+            # Since the block is now shifted to start from (0,0), we insert at the placement position
+            insert_x = p["x"]
+            insert_y = p["y"]
+            
             out_msp.add_blockref(
                 block_name,
-                insert=(p["x"], p["y"]),
+                insert=(insert_x, insert_y),
                 dxfattribs={"rotation": p["rotation"]},
             )
+            
+            # Debug logging for placement
+            print(f"[Nesting] Placed part {p['part_name']} at ({insert_x}, {insert_y}) rotation {p['rotation']}°")
 
         # Draw sheet border
         border_pts = [

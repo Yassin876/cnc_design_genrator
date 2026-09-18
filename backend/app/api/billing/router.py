@@ -21,6 +21,9 @@ from backend.app.models.payment import Payment
 from backend.app.models.payment_method import PaymentMethod
 from backend.app.core.config import settings
 
+from backend.app.services.paddle_service import PaddleService
+from fastapi import Request
+
 router = APIRouter(prefix="/billing", tags=["Billing & Subscriptions"])
 security_scheme = HTTPBearer(auto_error=False)
 
@@ -51,6 +54,78 @@ class ApprovePaymentPayload(BaseModel):
 
 class RejectPaymentPayload(BaseModel):
     reason: Optional[str] = None
+
+
+class CreateCheckoutPayload(BaseModel):
+    plan_id: str
+
+
+# ── PADDLE BILLING INTEGRATION ENDPOINTS ─────────────────────────────────────
+
+@router.get("/paddle/config")
+def get_paddle_public_config():
+    """
+    Returns public Paddle configuration (environment, client-side token, and price IDs).
+    Never exposes backend secret keys.
+    """
+    return PaddleService.get_public_config()
+
+
+@router.post("/paddle/create-checkout")
+def create_paddle_checkout_session(
+    payload: CreateCheckoutPayload,
+    current_user: UserRead = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Creates a secure Paddle Hosted Checkout URL for desktop/external browser checkout.
+    """
+    user = SubscriptionService.get_or_init_user(db, current_user.id)
+    try:
+        return PaddleService.create_checkout_url(user, payload.plan_id)
+    except ValueError as e:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail=str(e))
+
+
+@router.post("/paddle/webhook")
+async def paddle_webhook_receiver(
+    request: Request,
+    db: Session = Depends(get_db),
+):
+    """
+    Receives and processes official Paddle webhook notifications.
+    Enforces HMAC-SHA256 Paddle-Signature verification and idempotency.
+    """
+    raw_body = await request.body()
+    signature_header = request.headers.get("Paddle-Signature") or request.headers.get("paddle-signature")
+
+    success, msg, details = PaddleService.process_webhook_event(db, raw_body, signature_header)
+    if not success:
+        status_code = details.get("status", status.HTTP_400_BAD_REQUEST)
+        raise HTTPException(status_code=status_code, detail=msg)
+
+    return {"success": True, "message": msg, "details": details}
+
+
+@router.get("/paddle/subscription")
+def get_user_paddle_subscription(
+    current_user: UserRead = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    """
+    Returns Paddle subscription status and customer details for current authenticated user.
+    """
+    status_data = SubscriptionService.get_subscription_status(db, current_user.id)
+    return {
+        "user_id": current_user.id,
+        "plan": status_data.get("plan"),
+        "paddle_customer_id": status_data.get("paddle_customer_id"),
+        "paddle_subscription_id": status_data.get("paddle_subscription_id"),
+        "subscription_status": status_data.get("subscription_status"),
+        "next_billing_date": status_data.get("next_billing_date"),
+        "cancel_url": status_data.get("cancel_url"),
+        "update_url": status_data.get("update_url"),
+    }
 
 
 @router.get("/config")

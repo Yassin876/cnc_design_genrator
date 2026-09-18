@@ -99,6 +99,15 @@ class Settings(BaseModel):
         ).split(",")
     ]
 
+    # --- Paddle Billing Integration ---
+    PADDLE_ENVIRONMENT: str = os.getenv("PADDLE_ENVIRONMENT", "sandbox")  # 'sandbox' | 'production'
+    PADDLE_CLIENT_TOKEN: str = os.getenv("PADDLE_CLIENT_TOKEN", "test_7664c1ecbb2fa20c918c0678d2b")
+    PADDLE_API_KEY: str = os.getenv("PADDLE_API_KEY", "")
+    PADDLE_WEBHOOK_SECRET_KEY: str = os.getenv("PADDLE_WEBHOOK_SECRET_KEY", "")
+    PADDLE_PRICE_PRO: str = os.getenv("PADDLE_PRICE_PRO", "pri_01m2p85k69p7fxaa2aam45r4jw")
+    PADDLE_PRICE_PRO_PLUS: str = os.getenv("PADDLE_PRICE_PRO_PLUS", "pri_01m2p89n5cce3wjzk8y1aerbg1")
+    PADDLE_PRICE_BUSINESS: str = os.getenv("PADDLE_PRICE_BUSINESS", "pri_01m2p8cbbevbzyvxgp5pfsg746")
+
     # --- Logging ---
     LOG_LEVEL: str = os.getenv("LOG_LEVEL", "INFO")
     LOG_DIR: str = os.getenv("LOG_DIR", str(DEFAULT_LOGS_DIR))

@@ -1,0 +1,25 @@
+{
+  "instapay": {
+    "enabled": true,
+    "account_name": "Anti Design Engineering Ltd (Demo / Placeholder)",
+    "account_handle_or_number": "antidesign@instapay (Placeholder)",
+    "phone_number": "+20 100 000 0000 (Placeholder)",
+    "instructions": "Transfer the exact plan amount to the InstaPay address above and enter the transaction reference number or upload the receipt.",
+    "is_placeholder": true
+  },
+  "cash": {
+    "enabled": true,
+    "contact_person": "Anti Design Representative (Placeholder)",
+    "contact_phone": "+20 100 000 0000 (Placeholder)",
+    "office_address": "Engineering Studio HQ, Cairo (Placeholder)",
+    "instructions": "Contact representative to arrange cash collection or deposit, then enter the cash receipt reference code.",
+    "is_placeholder": true
+  },
+  "payment_gateway": {
+    "provider": "manual",
+    "provider_notes": "Pluggable provider interface ready for Paymob/Kashier integration",
+    "api_key": "",
+    "api_url": "",
+    "webhook_secret": ""
+  }
+}
